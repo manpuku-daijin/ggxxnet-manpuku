@@ -567,7 +567,11 @@ void CNetMgr::send_key(int p_time)
 	SPacket_Key data;
 	data.packetType = Packet_Key;
 	data.time		= p_time;
-	
+
+#ifdef MANPUKU
+	ENTERCS(&g_netMgr->m_csKey);
+#endif // #ifdef MANPUKU
+
 	for (int i = 0; i < m_queueSize; i++)
 	{
 		if (m_playSide == 1)
@@ -581,6 +585,10 @@ void CNetMgr::send_key(int p_time)
 			data.cell[i].syncChk = (BYTE)(m_syncChk[i] >> 8);
 		}
 	}
+
+#ifdef MANPUKU
+	LEAVECS(&g_netMgr->m_csKey);
+#endif // #ifdef MANPUKU
 
 	udpsend(&m_remoteAddr_active, (char*)&data, 5 + m_queueSize * 3);
 }

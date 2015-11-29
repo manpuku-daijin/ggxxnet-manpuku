@@ -6,8 +6,8 @@
 
 #ifdef MANPUKU
 #endif
-#define GGNVERSTR			"1.21-5"
-#define GGNFILEVER			1,21,5,0
+#define GGNVERSTR			"1.21-6"
+#define GGNFILEVER			1,21,6,0
 
 //#define GGNVERSTR			"1.20-3"	/* ggxxnet‚Ìƒo[ƒWƒ‡ƒ“•¶š—ñ */
 //#define GGNFILEVER			1,20,3,0
