@@ -756,17 +756,25 @@ void ggn_input(void)
 		{
 			/* 現在のフレームで必要な入力がまだ受信できていない */
 			int slow = 0;
+#ifdef MANPUKU
+			while( g_netMgr->m_connect ) {
+				ENTERCS(&g_netMgr->m_csKey);
+				bool bResult = ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF ) != 0x0000FFFF && ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0xFFFF0000 ) != 0xFFFF0000;
+				if( bResult ) break;
+				LEAVECS(&g_netMgr->m_csKey);
+#else
 			while (g_netMgr->m_connect &&
 				((g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF) == 0x0000FFFF ||
 				 (g_netMgr->m_key[g_netMgr->m_delay - 1] & 0xFFFF0000) == 0xFFFF0000))
 			{
+#endif // #ifdef MANPUKU
 				if (slow % 5 == 0)
 				{
 					if (g_netMgr->m_recvSuspend == false) g_netMgr->send_key(g_netMgr->m_time);
 				}
 
 				Sleep(3);
-				
+
 				/* 一定時間経過しても復帰しなければ切断 */
 				if (g_netMgr->m_recvSuspend == true && slow >= TIMEOUT_KEY2)
 				{
@@ -792,7 +800,9 @@ void ggn_input(void)
 			//static int xxx = 0;
 			//if (xxx++ % 2 == 0) **GGXX_ggnv_InputDataPtr = 0;
 
+#ifndef MANPUKU
 			ENTERCS(&g_netMgr->m_csKey);
+#endif // #ifndef MANPUKU
 
 			for (int i = g_netMgr->m_queueSize - 1; i > 0; i--)
 			{
