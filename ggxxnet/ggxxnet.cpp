@@ -267,6 +267,9 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 
 		g_nodeMgr = new CNodeMgr;
 		DBGOUT_LOG("nodeMgr init ok!!\n");
+#ifdef MANPUKU
+		g_DisplayNodeMgr = new CNodeMgr;
+#endif // #ifdef MANPUKU
 		
 		g_denyListMgr = new CDenyListMgr;
 		g_denyListMgr->readfile();
@@ -354,6 +357,9 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		if (g_dirIcon) { delete g_dirIcon; g_dirIcon = NULL; }
 		if (g_netMgr) { delete g_netMgr; g_netMgr = NULL; }
 		if (g_nodeMgr) { delete g_nodeMgr; g_nodeMgr = NULL; }
+#ifdef MANPUKU
+		if( g_DisplayNodeMgr ) { delete g_DisplayNodeMgr; g_DisplayNodeMgr = nullptr; }
+#endif // #ifdef MANPUKU
 		if (g_denyListMgr) { delete g_denyListMgr; g_denyListMgr = NULL; }
 		if (g_smPallette) delete g_smPallette;
 
@@ -367,6 +373,10 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 
 		DBGOUT_LOG("ggn terminated!!\n");
 	}
+
+#ifdef MANPUKU
+	RewValue( LogoSkipAddr, LogoSkipSize, LogoSkipRewVal );
+#endif // #ifdef MANPUKU
 
 	return TRUE;
 }
@@ -1051,6 +1061,9 @@ void ggn_startNetVS(void)
 
 	ENTERCS(&g_netMgr->m_csNode);
 	g_nodeMgr->removeAllNode();
+#ifdef MANPUKU
+	g_DisplayNodeMgr->removeAllNode();
+#endif // #ifdef MANPUKU
 	LEAVECS(&g_netMgr->m_csNode);
 
 	DBGOUT_NET("remove all nodes\n");
@@ -1066,6 +1079,10 @@ void ggn_startNetVS(void)
 		readNodeList();
 		LEAVECS(&g_netMgr->m_csNode);
 	}
+
+#ifdef MANPUKU
+	CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+#endif // #ifdef MANPUKU
 
 	ENTERCS(&g_netMgr->m_csNode);
 	g_nodeMgr->sortNodeList(g_vsnet.m_sortType);
@@ -1091,6 +1108,10 @@ void ggn_startNetVS(void)
 bool ggn_procNetVS(void)
 {
 	g_netMgr->m_lobbyFrame++;
+
+#ifdef MANPUKU
+CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+#endif // #ifdef MANPUKU
 
 	int input = (*GGXX_1PJDOWN & 0xf300) | (*GGXX_2PJDOWN & 0xf300);
 	static int pressKeyTime[6] = {0,0,0,0,0,0};
@@ -2608,6 +2629,10 @@ void ggn_cleanup(void)
 
 void ggn_render(void)
 {
+#ifdef MANPUKU
+CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+#endif // #ifdef MANPUKU
+
 	char str[256];
 	const int LINESIZE = 13;
 	
@@ -3138,6 +3163,9 @@ void enterServer(bool p_busy)
 	*end = '\0';
 	
 	g_nodeMgr->setOwnNode(ptr);
+#ifdef MANPUKU
+	g_DisplayNodeMgr->setOwnNode(ptr);
+#endif // #ifdef MANPUKU
 
 	DBGOUT_NET("enterServer end\n");
 }
@@ -3175,6 +3203,9 @@ void readNodeList(void)
 			temp[cnt] = '\0';
 
 			if (temp[0] != '\0') g_nodeMgr->addNode(temp, UNKNOWN_NAME, false, false);
+#ifdef MANPUKU
+			if (temp[0] != '\0') g_DisplayNodeMgr->addNode( temp, UNKNOWN_NAME, false, false );
+#endif // #ifdef MANPUKU
 		}
 	}
 

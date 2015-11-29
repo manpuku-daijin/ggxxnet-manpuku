@@ -4,8 +4,13 @@
 //
 #define IDI_ICON1                       101
 
+#ifdef MANPUKU
+#define GGNVERSTR			"1.20-4"
+#define GGNFILEVER			1,20,4,0
+#else
 #define GGNVERSTR			"1.20-3"	/* ggxxnet‚Ìƒo[ƒWƒ‡ƒ“•¶š—ñ */
 #define GGNFILEVER			1,20,3,0
+#endif // #ifdef MANPUKU
 
 // Next default values for new objects
 // 

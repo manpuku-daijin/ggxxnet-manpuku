@@ -1,3 +1,7 @@
+#ifdef MANPUKU
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif // #ifdef MANPUKU
+
 /* for Visual Studio 8.0 */
 #ifdef _MSC_VER
 	#if (_MSC_VER >= 1400)
@@ -335,6 +339,7 @@ void CNetMgr::disconnect(char* p_cause)
 	if (m_connect)
 	{
 		m_connect = false;
+#ifndef MANPUKU
 		DBGOUT_NET("************************* disconnect %s *************************\n", p_cause);
 		
 		ENTERCS(&g_netMgr->m_csNode);
@@ -350,10 +355,12 @@ void CNetMgr::disconnect(char* p_cause)
 				(BYTE)id[6], (BYTE)id[7], (BYTE)id[8], (BYTE)id[9], g_nodeMgr->getNode(idx)->m_name);
 		}
 		LEAVECS(&g_netMgr->m_csNode);
+#endif // #ifndef MANPUKU
 	}
 
 	if (m_watch)
 	{
+#ifndef MANPUKU
 		DBGOUT_NET("************************* disconnect (watch) %s *************************\n", p_cause);
 		
 		ENTERCS(&g_netMgr->m_csNode);
@@ -371,6 +378,7 @@ void CNetMgr::disconnect(char* p_cause)
 			}
 		}
 		LEAVECS(&g_netMgr->m_csNode);
+#endif // #ifndef MANPUKU
 
 		g_replay.m_playing = false;
 	}
@@ -2777,6 +2785,26 @@ bool CNetMgr::talking(void)
 		}
 		break;
 	}
+
+
+#ifdef MANPUKU
+	for( int i = 0; i < g_nodeMgr->getNodeCount(); ++ i ) {
+		CNode* node = g_nodeMgr->getNode( i );
+
+		ENTERCS(&g_netMgr->m_csNode);
+		if( node->m_state != State_NoResponse && node->m_state != State_Unknown ) {
+			int idx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
+			if( idx == -1 ) {
+				idx = g_DisplayNodeMgr->addNode( node->m_addr, node->m_name, false, false );
+			}
+			*g_DisplayNodeMgr->getNode( idx ) = *node;
+		} else {
+			g_DisplayNodeMgr->removeNode( i );
+		}
+		LEAVECS(&g_netMgr->m_csNode);
+	}
+#endif // #ifdef MANPUKU
+
 
 	return true;
 }

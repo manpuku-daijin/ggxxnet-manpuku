@@ -8,7 +8,12 @@
 #include <stdio.h>
 
 #define ZLIB_WINAPI 1
+#ifdef MANPUKU
+#include "../zlib-1.2.8/zlib.h"
+#else
 #include "../zlib125/zlib.h"
+#endif // #ifdef MANPUKU
+
 
 //******************************************************************
 // prototypes

@@ -138,7 +138,7 @@ public:
 	
 	CNode*	getNode(int p_idx) { return &m_nodeList[p_idx]; }
 	int		getNodeCount(void) { return m_nodeList.size(); }
-	
+
 	int		addNode(char* p_addr, char* p_name, bool p_busy, bool p_needUHP);
 
 	void	removeNode(int p_idx);
@@ -163,3 +163,6 @@ private:
 // extern
 //******************************************************************
 extern CNodeMgr* g_nodeMgr;
+#ifdef MANPUKU
+extern CNodeMgr* g_DisplayNodeMgr;
+#endif // #ifdef MANPUKU

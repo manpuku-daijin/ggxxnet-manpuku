@@ -4,8 +4,10 @@
 // include
 //******************************************************************
 #define WIN32_LEAN_AND_MEAN
+#ifndef MANPUKU
 #define WINVER			0x0501
 #define _WIN32_WINNT	0x0501
+#endif // #ifndef MANPUKU
 #include <windows.h>
 #include <mmsystem.h>
 #include <stdarg.h>
@@ -384,3 +386,35 @@ void DBGOUT_NET(char* fmt, ...);
 void DBGOUT_LOG(char* fmt, ...);
 void WRITE_DEBUGLOG(char* p_cause);
 void WRITE_REPLAY_RAWDATA(int p_size);
+
+
+#ifdef MANPUKU
+
+#define	LogoSkipAddr	(BYTE *)0x004A6F96
+#define LogoSkipSize	1
+#define LogoSkipOrgVal	0x74
+#define LogoSkipRewVal	0xEB
+
+#define MES( Str )	MessageBox( NULL, Str, TEXT( "Press the ESC or ENTER to close." ), MB_OK | MB_ICONWARNING )
+#define ACSERR	TEXT( "アクセス保護の変更ができませんでした" )
+
+template < class T, class T2 > bool RewValue( T addr, BYTE size, T2 value )
+{
+	DWORD flOldProtect;
+	if( VirtualProtect( addr, size, PAGE_READWRITE, &flOldProtect ) )
+	{
+		*addr = value;
+		if(! VirtualProtect( addr, size, flOldProtect, &flOldProtect ) )
+		{
+			MES( ACSERR );
+			return true;
+		}
+	}
+	else
+	{
+		MES( ACSERR );
+		return true;
+	}
+	return false;
+}
+#endif // #ifdef MANPUKU

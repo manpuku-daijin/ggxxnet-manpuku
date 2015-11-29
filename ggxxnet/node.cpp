@@ -17,6 +17,10 @@
 // global
 //******************************************************************
 CNodeMgr* g_nodeMgr = NULL;
+#ifdef MANPUKU
+CNodeMgr* g_DisplayNodeMgr = nullptr;
+#endif // #ifdef MANPUKU
+
 
 //******************************************************************
 // function
