@@ -206,15 +206,23 @@ _declspec(naked) void TrainingStringSwap()
 }
 
 #define TrainingDummyActionFixAddr	0x0046A7B0
-#define TrainingDummyActionFixJmpAddr	0x0046A7B5
 _declspec(naked) void TrainingDummyActionFix()
 {
 	_asm {
 		and edi, 0xffff;
 		cmp esi, ebx;
 		sete cl;
-		mov eax, TrainingDummyActionFixJmpAddr;
-		jmp eax;
+		retn;
+	}
+}
+#define TrainingDummySlipRecoveryFixAddr	0x004214D8
+_declspec(naked) void TrainingDummySlipRecoveryFix()
+{
+	_asm {
+		sete cl;
+		shl edx, cl;
+		and eax, 0xffff;
+		retn;
 	}
 }
 
@@ -374,8 +382,10 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		RewValue( (BYTE *)TrainingStringAddr, 1, 0xe9 );
 		RewValue( (DWORD *)( TrainingStringAddr + 1 ), 4, (DWORD)TrainingStringSwap - TrainingStringAddr - 5 );
 
-		RewValue( (BYTE *)TrainingDummyActionFixAddr, 1, 0xe9 );
+		RewValue( (BYTE *)TrainingDummyActionFixAddr, 1, 0xe8 );
 		RewValue( (DWORD *)( TrainingDummyActionFixAddr + 1 ), 4, (DWORD)TrainingDummyActionFix - TrainingDummyActionFixAddr - 5 );
+		RewValue( (BYTE *)TrainingDummySlipRecoveryFixAddr, 1, 0xe8 );
+		RewValue( (DWORD *)( TrainingDummySlipRecoveryFixAddr + 1 ), 4, (DWORD)TrainingDummySlipRecoveryFix - TrainingDummySlipRecoveryFixAddr - 5 );
 #endif // #ifdef MANPUKU
 
 		DBGOUT_LOG("dll load ok!!\n");
@@ -1303,7 +1313,15 @@ bool ggn_procNetVS(void)
 			if (g_vsnet.m_menu_visible)
 			{
 				g_vsnet.m_menu_cursor--;
+#ifdef MANPUKU
+				if( g_nodeMgr->getNodeCount() > 0 ) {
+					if( g_vsnet.m_menu_cursor < 0 ) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 1;
+				} else {
+					if( g_vsnet.m_menu_cursor < 0 ) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 0;
+				}
+#else
 				if (g_vsnet.m_menu_cursor < 0) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 3;
+#endif
 				GGXX_PlayCmnSound(0x37);
 			}
 			else
@@ -1321,7 +1339,15 @@ bool ggn_procNetVS(void)
 			if (g_vsnet.m_menu_visible)
 			{
 				g_vsnet.m_menu_cursor++;
+#ifdef MANPUKU
+				if( g_nodeMgr->getNodeCount() > 0 ) {
+					if( g_vsnet.m_menu_cursor > 1 ) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 0;
+				} else {
+					if( g_vsnet.m_menu_cursor > 0 ) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 0;
+				}
+#else
 				if (g_vsnet.m_menu_cursor > 3) g_vsnet.m_menu_cursor = g_vsnet.m_menu_cursor = 0;
+#endif
 				GGXX_PlayCmnSound(0x37);
 			}
 			else
@@ -1386,67 +1412,64 @@ bool ggn_procNetVS(void)
 		}
 		else if (input & 0x2000)	/* 決定 */
 		{
+#ifdef MANPUKU
+			if( g_netMgr->m_lobbyFrame >= 30) {
+				if( g_vsnet.m_menu_visible ) {
+					if( g_nodeMgr->getNodeCount() > 0 ) {
+						CNode* node = g_nodeMgr->getNode( g_vsnet.m_selectItemIdx );
+#else
 			if (g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() && g_netMgr->m_lobbyFrame >= 30)
 			{
 				if (g_vsnet.m_menu_visible)
 				{
 					CNode* node = g_nodeMgr->getNode(g_vsnet.m_selectItemIdx);
+#endif	// #ifdef MANPUKU
 
-					if (g_vsnet.m_menu_cursor == 0)
-					{
+					if( g_vsnet.m_menu_cursor == 0 ) {
 						// Play Game
-						if ((node->m_state == State_Idle || node->m_state == State_Watch_Playable) &&
-							node->m_deny == false && g_denyListMgr->find(node->m_id) == -1)
-						{
+						if( ( node->m_state == State_Idle || node->m_state == State_Watch_Playable ) &&
+							node->m_deny == false && g_denyListMgr->find( node->m_id ) == -1 ) {
 							/* アクティブアドレスに設定 */
-							g_netMgr->m_remoteAddr_active = g_netMgr->getAddrFromString(node->m_addr);
-							g_netMgr->send_connect(&g_netMgr->m_remoteAddr_active);
+							g_netMgr->m_remoteAddr_active = g_netMgr->getAddrFromString( node->m_addr );
+							g_netMgr->send_connect( &g_netMgr->m_remoteAddr_active );
 						}
 						// Watch Game
-						else if (node->m_state == State_Busy_Casting)
-						{
+						else if( node->m_state == State_Busy_Casting ) {
 							g_netMgr->m_watch = false;
 							g_netMgr->m_watchRootAddr[0] = NULL_ADDR;
 							g_netMgr->m_watchRootAddr[1] = NULL_ADDR;
 							g_netMgr->m_watchRecvComplete = false;
 							g_netMgr->m_watchRecvSize = 0;
-							for (int i = 0; i < MAXREPSIZE; i++) g_replay.m_data.inputData[i] = 0xffffffff;
+							for( int i = 0; i < MAXREPSIZE; i++ ) g_replay.m_data.inputData[i] = 0xffffffff;
 
-							sockaddr_in addr = g_netMgr->getAddrFromString(node->m_addr);
-							if (g_netMgr->watch(node->m_name, &addr, node->m_gamecount, true) == false)
-							{
+							sockaddr_in addr = g_netMgr->getAddrFromString( node->m_addr );
+							if( g_netMgr->watch( node->m_name, &addr, node->m_gamecount, true ) == false ) {
 								node->clearPing();
 								node->m_state = State_NoResponse;
 							}
 						}
-					}
-					else if (g_vsnet.m_menu_cursor == 1)
-					{
+					} else if( g_vsnet.m_menu_cursor == 1 ) {
 						/* Deny */
-						int idx = g_denyListMgr->find(node->m_id);
-						if (idx == -1)
-						{
+						int idx = g_denyListMgr->find( node->m_id );
+						if( idx == -1 ) {
 							/* 無視リストに追加 */
-							g_denyListMgr->add(node->m_name, node->m_id);
+							g_denyListMgr->add( node->m_name, node->m_id );
 							g_denyListMgr->savefile();
-							GGXX_PlayCmnSound(0x39);
-						}
-						else if (idx >= 0)
-						{
+							GGXX_PlayCmnSound( 0x39 );
+						} else if( idx >= 0 ) {
 							/* 無視リストから除外 */
-							g_denyListMgr->remove(node->m_id);
+							g_denyListMgr->remove( node->m_id );
 							g_denyListMgr->savefile();
-							GGXX_PlayCmnSound(0x39);
+							GGXX_PlayCmnSound( 0x39 );
 						}
-					}
-					else if (g_vsnet.m_menu_cursor == 2)
-					{
+					} else if( g_vsnet.m_menu_cursor == 2 ) {
 						/* Send Message */
-					}
-					else if (g_vsnet.m_menu_cursor == 3)
-					{
+					} else if( g_vsnet.m_menu_cursor == 3 ) {
 						/* Config */
 					}
+#ifdef MANPUKU
+					}
+#endif	// #ifdef MANPUKU
 				}
 				else
 				{
@@ -2994,12 +3017,21 @@ void ggn_render(void)
 
 			line++;
 		}
-		
+
+#ifdef MANPUKU
+		if( 1 ) {
+			CNode* selnode = nullptr;
+			if( g_nodeMgr->getNodeCount() > 0 ) {
+				selnode = g_nodeMgr->getNode( g_vsnet.m_selectItemIdx );
+				drawGGXXWindow( selnode->m_msg, -1, 20, 385, 480, 460 );
+			}  else drawGGXXWindow( "", -1, 20, 385, 480, 460 );
+#else
 		if (g_vsnet.m_selectItemIdx != -1 && g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount())
 		{
 			CNode* selnode = g_nodeMgr->getNode(g_vsnet.m_selectItemIdx);
 		
 			drawGGXXWindow(selnode->m_msg, -1, 20, 385, 480, 460);
+#endif	// #ifdef MANPUKU
 		
 			if (g_vsnet.m_menu_visible)
 			{
@@ -3016,59 +3048,64 @@ void ggn_render(void)
 				g_d3dDev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, d3dv, sizeof(D3DV_GGN));
 
 				char str[256] = "";
-				bool playable = selnode->m_state == State_Idle || selnode->m_state == State_Watch_Playable;
-				if (g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() &&
-				   (playable == false ||
-				   selnode->m_deny ||							// 相手から拒否
-				   g_denyListMgr->find(selnode->m_id) != -1))	// 自分で拒否又はコードがINVALID_MID
-				{
-					if (selnode->m_state == State_Busy_Casting)
+#ifdef MANPUKU
+				if( selnode ) {
+#endif	// #ifdef MANPUKU
+					bool playable = selnode->m_state == State_Idle || selnode->m_state == State_Watch_Playable;
+					if( g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() &&
+						( playable == false ||
+						selnode->m_deny ||							// 相手から拒否
+						g_denyListMgr->find( selnode->m_id ) != -1 ) )	// 自分で拒否又はコードがINVALID_MID
 					{
-						if (selnode->m_battleInfoChara[0]-1 >= 0 && selnode->m_battleInfoChara[0]-1 < CHARACOUNT &&
-							selnode->m_battleInfoChara[1]-1 >= 0 && selnode->m_battleInfoChara[1]-1 < CHARACOUNT)
-						{
-							sprintf_s(str, 256, "Watch game [%s(%c%c) vs %s(%c%c)]\n",
-								selnode->m_battleInfoName[0],
-								g_charaNames[selnode->m_battleInfoChara[0]-1][0],
-								g_charaNames[selnode->m_battleInfoChara[0]-1][1],
-								selnode->m_battleInfoName[1],
-								g_charaNames[selnode->m_battleInfoChara[1]-1][0],
-								g_charaNames[selnode->m_battleInfoChara[1]-1][1]);
+						if( selnode->m_state == State_Busy_Casting ) {
+							if( selnode->m_battleInfoChara[0] - 1 >= 0 && selnode->m_battleInfoChara[0] - 1 < CHARACOUNT &&
+								selnode->m_battleInfoChara[1] - 1 >= 0 && selnode->m_battleInfoChara[1] - 1 < CHARACOUNT ) {
+								sprintf_s( str, 256, "Watch game [%s(%c%c) vs %s(%c%c)]\n",
+									selnode->m_battleInfoName[0],
+									g_charaNames[selnode->m_battleInfoChara[0] - 1][0],
+									g_charaNames[selnode->m_battleInfoChara[0] - 1][1],
+									selnode->m_battleInfoName[1],
+									g_charaNames[selnode->m_battleInfoChara[1] - 1][0],
+									g_charaNames[selnode->m_battleInfoChara[1] - 1][1] );
+							} else strcpy( str, "Watch game\n" );
+						} else if( selnode->m_state == State_Busy_Casting_NG ) {
+							strcpy( str, "!Watch game\n" );
+						} else {
+							/* 「!」はグレイ表示 */
+							strcpy( str, "!Play game\n" );
 						}
-						else strcpy(str, "Watch game\n");
+					} else strcpy( str, "Play game\n" );
+
+					if( g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() && idcmp( (BYTE*)selnode->m_id, INVALID_MID ) ) {
+						strcat( str, "!" );/* 「!」はグレイ表示 */
 					}
-					else if (selnode->m_state == State_Busy_Casting_NG)
+
+					if( g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() &&
+						g_denyListMgr->find( selnode->m_id ) >= 0 )	// 拒否している
 					{
-						strcpy(str, "!Watch game\n");
+						strcat( str, "Permit this player\n" );
+					} else {
+						strcat( str, "Deny this player\n" );
 					}
-					else
-					{
-						/* 「!」はグレイ表示 */
-						strcpy(str, "!Play game\n");
-					}
-				}
-				else strcpy(str, "Play game\n");
 
-				if (g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() && idcmp((BYTE*)selnode->m_id, INVALID_MID))
-				{
-					strcat(str, "!");/* 「!」はグレイ表示 */
-				}
-
-				if (g_vsnet.m_selectItemIdx < g_nodeMgr->getNodeCount() &&
-					g_denyListMgr->find(selnode->m_id) >= 0)	// 拒否している
-				{
-					strcat(str, "Permit this player\n");
-				}
-				else
-				{
-					strcat(str, "Deny this player\n");
-				}
-
-				strcat(str, "!Send message (Not support)\n");
-				strcat(str, "-\n");
-				strcat(str, "!Config (Not support)");
+#ifndef MANPUKU
+					strcat(str, "!Send message (Not support)\n");
+					strcat(str, "-\n");
+					strcat(str, "!Config (Not support)");
+#endif	// #ifndef MANPUKU
 				int halfwidth = g_d3dfont->getTextWidth(str) / 2;
+#ifdef MANPUKU
+				drawGGXXWindow( str, g_vsnet.m_menu_cursor, 320 - halfwidth, 180, 330 + halfwidth, 213 );
+#else
 				drawGGXXWindow(str, g_vsnet.m_menu_cursor, 320 - halfwidth, 180, 330 + halfwidth, 247);
+#endif	// #ifdef MANPUKU
+#ifdef MANPUKU
+				} else {
+					strcpy( str, "!Node None\n" );
+				int halfwidth = g_d3dfont->getTextWidth(str) / 2;
+				drawGGXXWindow( str, g_vsnet.m_menu_cursor, 320 - halfwidth, 180, 330 + halfwidth, 200 );
+				}
+#endif	// #ifdef MANPUKU
 			}
 
 			if (g_netMgr->m_watch)
@@ -3081,7 +3118,11 @@ void ggn_render(void)
 				drawGGXXWindow(str, -1, 240, 230, 380, 250);
 			}
 		}
+#ifdef MANPUKU
+		else drawGGXXWindow("", -1, 20, 385, 480, 460);
+#else
 		else drawGGXXWindow("", -1, 20, 380, 480, 460);
+#endif	// #ifdef MANPUKU
 
 		LEAVECS(&g_netMgr->m_csNode);
 	}
