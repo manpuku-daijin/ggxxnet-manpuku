@@ -2788,21 +2788,22 @@ bool CNetMgr::talking(void)
 
 
 #ifdef MANPUKU
+	ENTERCS(&g_netMgr->m_csNode);
 	for( int i = 0; i < g_nodeMgr->getNodeCount(); ++ i ) {
 		CNode* node = g_nodeMgr->getNode( i );
-
-		ENTERCS(&g_netMgr->m_csNode);
+		int DisplayNodeMgrIdx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
 		if( node->m_state != State_NoResponse && node->m_state != State_Unknown ) {
-			int idx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
-			if( idx == -1 ) {
-				idx = g_DisplayNodeMgr->addNode( node->m_addr, node->m_name, false, false );
+			if( DisplayNodeMgrIdx == -1 ) {
+				DisplayNodeMgrIdx = g_DisplayNodeMgr->addNode( node->m_addr, node->m_name, false, false );
 			}
-			*g_DisplayNodeMgr->getNode( idx ) = *node;
+			*g_DisplayNodeMgr->getNode( DisplayNodeMgrIdx ) = *node;
 		} else {
-			g_DisplayNodeMgr->removeNode( i );
+			if( DisplayNodeMgrIdx != -1 ) {
+				g_DisplayNodeMgr->removeNode( DisplayNodeMgrIdx );
+			}
 		}
-		LEAVECS(&g_netMgr->m_csNode);
 	}
+	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
 
 

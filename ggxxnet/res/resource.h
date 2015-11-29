@@ -5,12 +5,13 @@
 #define IDI_ICON1                       101
 
 #ifdef MANPUKU
-#define GGNVERSTR			"1.20-4"
-#define GGNFILEVER			1,20,4,0
-#else
-#define GGNVERSTR			"1.20-3"	/* ggxxnetのバージョン文字列 */
-#define GGNFILEVER			1,20,3,0
-#endif // #ifdef MANPUKU
+#endif
+#define GGNVERSTR			"1.20-5"
+#define GGNFILEVER			1,20,5,0
+
+//#define GGNVERSTR			"1.20-3"	/* ggxxnetのバージョン文字列 */
+//#define GGNFILEVER			1,20,3,0
+
 
 // Next default values for new objects
 // 
