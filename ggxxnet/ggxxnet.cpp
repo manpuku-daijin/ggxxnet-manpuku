@@ -760,8 +760,8 @@ void ggn_input(void)
 			while( g_netMgr->m_connect ) {
 				ENTERCS(&g_netMgr->m_csKey);
 				bool bResult = ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF ) != 0x0000FFFF && ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0xFFFF0000 ) != 0xFFFF0000;
-				if( bResult ) break;
 				LEAVECS(&g_netMgr->m_csKey);
+				if( bResult ) break;
 #else
 			while (g_netMgr->m_connect &&
 				((g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF) == 0x0000FFFF ||
@@ -800,9 +800,7 @@ void ggn_input(void)
 			//static int xxx = 0;
 			//if (xxx++ % 2 == 0) **GGXX_ggnv_InputDataPtr = 0;
 
-#ifndef MANPUKU
 			ENTERCS(&g_netMgr->m_csKey);
-#endif // #ifndef MANPUKU
 
 			for (int i = g_netMgr->m_queueSize - 1; i > 0; i--)
 			{
