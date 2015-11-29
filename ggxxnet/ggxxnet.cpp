@@ -1175,15 +1175,21 @@ bool ggn_procNetVS(void)
 			if( useLobbyServer() ) {
 				if( g_netMgr->m_bAutoRemoveAllNode ) {
 					ENTERCS( &g_netMgr->m_csNode );
-					g_nodeMgr->removeAllNode();
+					::g_nodeMgr->removeAllNode();
+					g_DisplayNodeMgr->removeAllNode();
 					LEAVECS( &g_netMgr->m_csNode );
 				}
 				readServer();
+				ENTERCS( &g_netMgr->m_csNode );
+				if( g_netMgr->m_bNodeDisplayMode ) {
+					g_netMgr->LoadDisplayNodeMgr();
+				}
+				LEAVECS( &g_netMgr->m_csNode );
 				if( g_vsnet.m_selectItemIdx >= g_nodeMgr->getNodeCount() ) g_vsnet.m_selectItemIdx = g_nodeMgr->getNodeCount() - 1;
 				if( g_vsnet.m_dispItemHead >= g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage ) g_vsnet.m_dispItemHead = g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage;
 				if( g_vsnet.m_selectItemIdx < 0 ) g_vsnet.m_selectItemIdx = 0;
 				if( g_vsnet.m_dispItemHead < 0 ) g_vsnet.m_dispItemHead = 0;
-				Sleep( 100 );
+				Sleep( g_iniFileInfo.m_AutoReadServerSortWait );
 				ENTERCS( &g_netMgr->m_csNode );
 				g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
 				LEAVECS( &g_netMgr->m_csNode );
@@ -3594,6 +3600,7 @@ void readIniFile(void)
 #ifdef MANPUKU
 	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", 10, getIniFilePath() );
 	if( g_iniFileInfo.m_AutoReadServerInterval < 10 ) g_iniFileInfo.m_AutoReadServerInterval = 10;
+	g_iniFileInfo.m_AutoReadServerSortWait = ::GetPrivateProfileInt( "Network", "AutoReadServerSortWait", 1000, getIniFilePath() );
 #endif // #ifdef MANPUKU
 
 #if _DEBUG
@@ -3649,6 +3656,8 @@ void writeIniFile(void)
 #ifdef MANPUKU
 	_itoa( g_iniFileInfo.m_AutoReadServerInterval, str, 10 );
 	::WritePrivateProfileString( "Network", "AutoReadServerInterval", str, getIniFilePath() );
+	_itoa( g_iniFileInfo.m_AutoReadServerSortWait, str, 10 );
+	::WritePrivateProfileString( "Network", "AutoReadServerSortWait", str, getIniFilePath() );
 #endif // #ifdef MANPUKU
 
 #if _DEBUG

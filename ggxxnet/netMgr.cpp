@@ -2879,7 +2879,7 @@ int CNetMgr::tcprecv(char* p_buf, int p_bufSize, int p_timeout)
 #ifdef MANPUKU
 void CNetMgr::LoadDisplayNodeMgr()
 {
-	ENTERCS( &m_csNode );
+//	ENTERCS( &m_csNode );
 	for( int i = 0; i < g_nodeMgr->getNodeCount(); ++ i ) {
 		CNode* node = g_nodeMgr->getNode( i );
 		int DisplayNodeMgrIdx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
@@ -2894,6 +2894,6 @@ void CNetMgr::LoadDisplayNodeMgr()
 			}
 		}
 	}
-	LEAVECS( &m_csNode );
+//	LEAVECS( &m_csNode );
 }
 #endif // #ifdef MANPUKU

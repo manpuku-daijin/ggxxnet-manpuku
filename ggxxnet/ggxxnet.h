@@ -333,6 +333,7 @@ typedef struct
 
 #ifdef MANPUKU
 	int m_AutoReadServerInterval;
+	int m_AutoReadServerSortWait;
 #endif // #ifdef MANPUKU
 
 #if _DEBUG // データ参照ディレクトリ
