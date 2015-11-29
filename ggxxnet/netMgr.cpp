@@ -343,7 +343,6 @@ void CNetMgr::disconnect(char* p_cause)
 	if (m_connect)
 	{
 		m_connect = false;
-#ifndef MANPUKU
 		DBGOUT_NET("************************* disconnect %s *************************\n", p_cause);
 		
 		ENTERCS(&g_netMgr->m_csNode);
@@ -359,12 +358,10 @@ void CNetMgr::disconnect(char* p_cause)
 				(BYTE)id[6], (BYTE)id[7], (BYTE)id[8], (BYTE)id[9], g_nodeMgr->getNode(idx)->m_name);
 		}
 		LEAVECS(&g_netMgr->m_csNode);
-#endif // #ifndef MANPUKU
 	}
 
 	if (m_watch)
 	{
-#ifndef MANPUKU
 		DBGOUT_NET("************************* disconnect (watch) %s *************************\n", p_cause);
 		
 		ENTERCS(&g_netMgr->m_csNode);
@@ -382,7 +379,6 @@ void CNetMgr::disconnect(char* p_cause)
 			}
 		}
 		LEAVECS(&g_netMgr->m_csNode);
-#endif // #ifndef MANPUKU
 
 		g_replay.m_playing = false;
 	}
