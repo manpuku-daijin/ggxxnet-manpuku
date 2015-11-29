@@ -420,12 +420,17 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 			delete[] *GGXX_ggnv_backupdataDir;
 			*GGXX_ggnv_backupdataDir = (char*)0x51ab00; // 元々の値"backupdata"を指す
 		}
+#ifdef MANPUKU
+		void ggn_cleanup(void);
+		ggn_cleanup();
+#endif // #ifdef MANPUKU
 		writeIniFile();
 #endif
 		if (g_d3dfont) { delete g_d3dfont; g_d3dfont = NULL; }
-
+#ifndef MANPUKU
 		void ggn_cleanup(void);
 		ggn_cleanup();
+#endif // #ifndef MANPUKU
 
 		timeEndPeriod(1);
 
@@ -1274,22 +1279,20 @@ bool ggn_procNetVS(void)
 			g_netMgr->m_bAutoRemoveAllNode = false;
 		} else if( g_netMgr->m_lobbyFrame > g_netMgr->m_AutoReadServerTime ) {
 			if( useLobbyServer() ) {
+				ENTERCS( &g_netMgr->m_csNode );
 				if( g_netMgr->m_bAutoRemoveAllNode ) {
-					ENTERCS( &g_netMgr->m_csNode );
 					::g_nodeMgr->removeAllNode();
 					g_DisplayNodeMgr->removeAllNode();
-					LEAVECS( &g_netMgr->m_csNode );
 				}
 				readServer();
-				ENTERCS( &g_netMgr->m_csNode );
 				if( g_iniFileInfo.m_NodeDisplayMode ) {
 					g_netMgr->LoadDisplayNodeMgr();
 				}
-				LEAVECS( &g_netMgr->m_csNode );
 				if( g_vsnet.m_selectItemIdx >= g_nodeMgr->getNodeCount() ) g_vsnet.m_selectItemIdx = g_nodeMgr->getNodeCount() - 1;
 				if( g_vsnet.m_dispItemHead >= g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage ) g_vsnet.m_dispItemHead = g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage;
 				if( g_vsnet.m_selectItemIdx < 0 ) g_vsnet.m_selectItemIdx = 0;
 				if( g_vsnet.m_dispItemHead < 0 ) g_vsnet.m_dispItemHead = 0;
+				LEAVECS( &g_netMgr->m_csNode );
 				Sleep( g_iniFileInfo.m_AutoReadServerSortWait );
 				ENTERCS( &g_netMgr->m_csNode );
 				g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
@@ -2835,8 +2838,18 @@ void ggn_cleanup(void)
 	{
 		RECT rect;
 		GetClientRect(*GGXX_HWND, &rect);
-		g_iniFileInfo.m_zoomx = (float)(rect.right - rect.left) / 640.0f;
-		g_iniFileInfo.m_zoomy = (float)(rect.bottom - rect.top) / 480.0f;
+#ifdef MANPUKU
+		if( rect.right < 0 || rect.right >= 10000 );
+		else if( rect.left < 0 || rect.left >= 10000 );
+		else if( rect.bottom < 0 || rect.bottom >= 10000 );
+		else if( rect.top < 0 || rect.top >= 10000 );
+		else {
+#endif // #ifdef MANPUKU
+			g_iniFileInfo.m_zoomx = (float)( rect.right - rect.left ) / 640.0f;
+			g_iniFileInfo.m_zoomy = (float)( rect.bottom - rect.top ) / 480.0f;
+#ifdef MANPUKU
+		}
+#endif // #ifdef MANPUKU
 
 		int w, h;
 		getWindowSize(640, 480, &w, &h);
@@ -3784,6 +3797,7 @@ void readIniFile(void)
 
 void writeIniFile(void)
 {
+#ifndef MANPUKU
 	// 状態を保存
 	if (*GGXX_FULLSCREEN == 0) // windowモード時のみ
 	{
@@ -3792,6 +3806,7 @@ void writeIniFile(void)
 		g_iniFileInfo.m_zoomx = (float)(rect.right - rect.left) / 640.0f;
 		g_iniFileInfo.m_zoomy = (float)(rect.bottom - rect.top) / 480.0f;
 	}
+#endif // #ifndef MANPUKU
 
 #ifdef MANPUKU
 	HANDLE hFile = CreateFile( getIniFilePath(), GENERIC_WRITE, 0, nullptr, TRUNCATE_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr );

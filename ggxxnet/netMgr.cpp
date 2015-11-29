@@ -2764,6 +2764,9 @@ bool CNetMgr::talking(void)
 				chara[0] = (char)g_replay.m_data.chara1P;
 				chara[1] = (char)g_replay.m_data.chara2P;
 
+#ifdef MANPUKU
+				ENTERCS(&g_netMgr->m_csNode);
+#endif // #ifdef MANPUKU
 				sockaddr_in myaddr = getAddrFromString(g_nodeMgr->getOwnNode());
 				if (g_netMgr->m_playSide == 1)
 				{
@@ -2779,6 +2782,9 @@ bool CNetMgr::talking(void)
 					gamecount[0] = g_enemyInfo.m_gameCount;
 					gamecount[1] = g_setting.totalBattle;
 				}
+#ifdef MANPUKU
+				LEAVECS( &g_netMgr->m_csNode );
+#endif // #ifdef MANPUKU
 				DBGOUT_NET("Battle Info Request Busy\n");
 			}
 			else if (!m_connect && !m_watch)
@@ -2786,6 +2792,9 @@ bool CNetMgr::talking(void)
 				// ノードリストに一致する情報があれば送信
 				CNode* node = NULL;
 				bool hit = false;
+#ifdef MANPUKU
+				ENTERCS(&g_netMgr->m_csNode);
+#endif // #ifdef MANPUKU
 				for (int i = 0; i < g_nodeMgr->getNodeCount(); i++)
 				{
 					node = g_nodeMgr->getNode(i);
@@ -2799,6 +2808,9 @@ bool CNetMgr::talking(void)
 						data->targetIP.S_un.S_addr == node->m_battleInfoIP[1];
 					if (hit) break;
 				}
+#ifdef MANPUKU
+				LEAVECS( &g_netMgr->m_csNode );
+#endif // #ifdef MANPUKU
 				if (!hit) break;
 				__strncpy(name[0], node->m_battleInfoName[0], 29);
 				__strncpy(name[1], node->m_battleInfoName[1], 29);
