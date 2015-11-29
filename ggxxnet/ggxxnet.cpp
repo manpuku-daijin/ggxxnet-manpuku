@@ -1170,16 +1170,27 @@ bool ggn_procNetVS(void)
 	if( g_iniFileInfo.m_AutoReadServerInterval ) {
 		if( g_netMgr->m_lobbyFrame <= 0 || input ) {
 			g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
+			g_netMgr->m_bAutoRemoveAllNode = false;
 		} else if( g_netMgr->m_lobbyFrame > g_netMgr->m_AutoReadServerTime ) {
 			if( useLobbyServer() ) {
-//				enterServer(0);
+				if( g_netMgr->m_bAutoRemoveAllNode ) {
+					ENTERCS( &g_netMgr->m_csNode );
+					g_nodeMgr->removeAllNode();
+					LEAVECS( &g_netMgr->m_csNode );
+				}
 				readServer();
+				if( g_vsnet.m_selectItemIdx >= g_nodeMgr->getNodeCount() ) g_vsnet.m_selectItemIdx = g_nodeMgr->getNodeCount() - 1;
+				if( g_vsnet.m_dispItemHead >= g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage ) g_vsnet.m_dispItemHead = g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage;
+				if( g_vsnet.m_selectItemIdx < 0 ) g_vsnet.m_selectItemIdx = 0;
+				if( g_vsnet.m_dispItemHead < 0 ) g_vsnet.m_dispItemHead = 0;
+				Sleep( 100 );
+				ENTERCS( &g_netMgr->m_csNode );
+				g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
+				LEAVECS( &g_netMgr->m_csNode );
+//				GGXX_PlayCmnSound(0x3B);
+				g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
+				g_netMgr->m_bAutoRemoveAllNode = true;
 			}
-			ENTERCS( &g_netMgr->m_csNode );
-			g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
-			LEAVECS( &g_netMgr->m_csNode );
-//			GGXX_PlayCmnSound(0x3B);
-			g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
 		}
 	}
 #endif // #ifdef MANPUKU
@@ -3582,6 +3593,7 @@ void readIniFile(void)
 
 #ifdef MANPUKU
 	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", 10, getIniFilePath() );
+	if( g_iniFileInfo.m_AutoReadServerInterval < 10 ) g_iniFileInfo.m_AutoReadServerInterval = 10;
 #endif // #ifdef MANPUKU
 
 #if _DEBUG

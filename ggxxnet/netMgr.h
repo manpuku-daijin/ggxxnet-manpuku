@@ -795,6 +795,7 @@ public:
 #ifdef MANPUKU
 	bool m_bNodeDisplayMode;
 	int m_AutoReadServerTime;
+	bool m_bAutoRemoveAllNode;
 #endif // #ifdef MANPUKU
 };
 
