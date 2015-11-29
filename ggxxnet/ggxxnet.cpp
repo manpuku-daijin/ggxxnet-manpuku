@@ -204,6 +204,20 @@ _declspec(naked) void TrainingStringSwap()
 		jmp eax;
 	}
 }
+
+#define TrainingDummyActionFixAddr	0x0046A7B0
+#define TrainingDummyActionFixJmpAddr	0x0046A7B5
+_declspec(naked) void TrainingDummyActionFix()
+{
+	_asm {
+		and edi, 0xffff;
+		cmp esi, ebx;
+		sete cl;
+		mov eax, TrainingDummyActionFixJmpAddr;
+		jmp eax;
+	}
+}
+
 #endif // #ifdef MANPUKU
 
 BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
@@ -354,6 +368,16 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		SetCurrentDirectory(g_iniFileInfo.m_dataDir);
 #endif
 #endif
+
+#ifdef MANPUKU
+		RewValue( LogoSkipAddr, LogoSkipSize, LogoSkipRewVal );
+		RewValue( (BYTE *)TrainingStringAddr, 1, 0xe9 );
+		RewValue( (DWORD *)( TrainingStringAddr + 1 ), 4, (DWORD)TrainingStringSwap - TrainingStringAddr - 5 );
+
+		RewValue( (BYTE *)TrainingDummyActionFixAddr, 1, 0xe9 );
+		RewValue( (DWORD *)( TrainingDummyActionFixAddr + 1 ), 4, (DWORD)TrainingDummyActionFix - TrainingDummyActionFixAddr - 5 );
+#endif // #ifdef MANPUKU
+
 		DBGOUT_LOG("dll load ok!!\n");
 	}
 	else if (dwReason == DLL_PROCESS_DETACH)
@@ -397,13 +421,6 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		DBGOUT_LOG("ggn terminated!!\n");
 	}
 
-#ifdef MANPUKU
-	RewValue( LogoSkipAddr, LogoSkipSize, LogoSkipRewVal );
-	RewValue( (BYTE *)TrainingStringAddr, 1, 0xe9 );
-	RewValue( (DWORD *)( TrainingStringAddr + 1 ), 4, (DWORD)TrainingStringSwap - TrainingStringAddr - 5 );
-
-#endif // #ifdef MANPUKU
-
 	return TRUE;
 }
 
@@ -423,6 +440,10 @@ void ggn_input(void)
 	if( g_netMgr->m_networkEnable ) {
 		if( *GGXX_MODE2 == 0x09 ) {
 			g_netMgr->m_networkEnable = false;
+			if( g_netMgr->m_lobbyFrame > 0 ) {
+				g_netMgr->m_lobbyFrame = -1;
+				if( useLobbyServer() ) leaveServer();
+			}
 		}
 	}
 	if( g_netMgr->m_connect ) {
@@ -1183,9 +1204,7 @@ bool ggn_procNetVS(void)
 	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
 	else g_nodeMgr = ::g_nodeMgr;
 	LEAVECS(&g_netMgr->m_csNode);
-#endif // #ifdef MANPUKU
-	
-#ifdef MANPUKU
+
 	int input = (*GGXX_1PJDOWN & 0xf30f) | (*GGXX_2PJDOWN & 0xf30f);
 #else
 	int input = (*GGXX_1PJDOWN & 0xf300) | (*GGXX_2PJDOWN & 0xf300);
@@ -1491,7 +1510,7 @@ bool ggn_procNetVS(void)
 				LEAVECS( &g_netMgr->m_csNode );
 				GGXX_PlayCmnSound( 0x39 );
 			}
-		} else if (input & 0x1) {
+		} else if( input & 0x1 && g_netMgr->m_lobbyFrame > 1 ) {
 			g_netMgr->m_lobbyFrame = 10000;
 			g_vsnet.m_menu_visible = false;
 
@@ -1989,15 +2008,6 @@ void ggn_softReset(void)
 
 		if (useLobbyServer()) leaveServer();
 	}
-#ifdef MANPUKU
-	else if( *GGXX_MODE1 & 0x1000000 ) {
-		g_netMgr->m_networkEnable = false;
-
-		g_netMgr->m_lobbyFrame = -1;
-
-		if( useLobbyServer() ) leaveServer();
-	}
-#endif // #ifdef MANPUKU
 }
 
 void ggn_drawBattlePlayerName(DWORD p_side)
