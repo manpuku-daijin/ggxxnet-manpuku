@@ -687,6 +687,10 @@ public:
 
 	void initWatchVars(void);
 
+#ifdef MANPUKU
+	void LoadDisplayNodeMgr();
+#endif // #ifdef MANPUKU
+
 private:
 	bool talking(void);
 

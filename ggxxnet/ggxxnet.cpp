@@ -1171,7 +1171,10 @@ bool ggn_procNetVS(void)
 		if( g_netMgr->m_lobbyFrame <= 0 || input ) {
 			g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
 		} else if( g_netMgr->m_lobbyFrame > g_netMgr->m_AutoReadServerTime ) {
-			if( useLobbyServer() ) readServer();
+			if( useLobbyServer() ) {
+//				enterServer(0);
+				readServer();
+			}
 			ENTERCS( &g_netMgr->m_csNode );
 			g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
 			LEAVECS( &g_netMgr->m_csNode );
@@ -1406,8 +1409,10 @@ bool ggn_procNetVS(void)
 #ifdef MANPUKU
 			if( !g_vsnet.m_menu_visible ) {
 				ENTERCS( &g_netMgr->m_csNode );
-				if( g_netMgr->m_bNodeDisplayMode ^= true ) g_nodeMgr = g_DisplayNodeMgr;
-				else g_nodeMgr = ::g_nodeMgr;
+				if( g_netMgr->m_bNodeDisplayMode ^= true ) {
+					g_netMgr->LoadDisplayNodeMgr();
+					g_nodeMgr = g_DisplayNodeMgr;
+				} else g_nodeMgr = ::g_nodeMgr;
 				g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
 				if( g_vsnet.m_selectItemIdx >= g_nodeMgr->getNodeCount() ) g_vsnet.m_selectItemIdx = g_nodeMgr->getNodeCount() - 1;
 				if( g_vsnet.m_dispItemHead >= g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage ) g_vsnet.m_dispItemHead = g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage;

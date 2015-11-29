@@ -2794,20 +2794,7 @@ bool CNetMgr::talking(void)
 #ifdef MANPUKU
 	ENTERCS(&g_netMgr->m_csNode);
 	if( g_netMgr->m_bNodeDisplayMode ) {
-		for( int i = 0; i < g_nodeMgr->getNodeCount(); ++ i ) {
-			CNode* node = g_nodeMgr->getNode( i );
-			int DisplayNodeMgrIdx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
-			if( node->m_state != State_NoResponse && node->m_state != State_Unknown ) {
-				if( DisplayNodeMgrIdx == -1 ) {
-					DisplayNodeMgrIdx = g_DisplayNodeMgr->addNode( node->m_addr, node->m_name, false, false );
-				}
-				*g_DisplayNodeMgr->getNode( DisplayNodeMgrIdx ) = *node;
-			} else {
-				if( DisplayNodeMgrIdx != -1 ) {
-					g_DisplayNodeMgr->removeNode( DisplayNodeMgrIdx );
-				}
-			}
-		}
+		g_netMgr->LoadDisplayNodeMgr();
 	}
 	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
@@ -2888,3 +2875,25 @@ int CNetMgr::tcprecv(char* p_buf, int p_bufSize, int p_timeout)
 	return readSize;
 }
 #endif
+
+#ifdef MANPUKU
+void CNetMgr::LoadDisplayNodeMgr()
+{
+	ENTERCS( &m_csNode );
+	for( int i = 0; i < g_nodeMgr->getNodeCount(); ++ i ) {
+		CNode* node = g_nodeMgr->getNode( i );
+		int DisplayNodeMgrIdx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
+		if( node->m_state != State_NoResponse && node->m_state != State_Unknown ) {
+			if( DisplayNodeMgrIdx == -1 ) {
+				DisplayNodeMgrIdx = g_DisplayNodeMgr->addNode( node->m_addr, node->m_name, false, false );
+			}
+			*g_DisplayNodeMgr->getNode( DisplayNodeMgrIdx ) = *node;
+		} else {
+			if( DisplayNodeMgrIdx != -1 ) {
+				g_DisplayNodeMgr->removeNode( DisplayNodeMgrIdx );
+			}
+		}
+	}
+	LEAVECS( &m_csNode );
+}
+#endif // #ifdef MANPUKU
