@@ -80,9 +80,10 @@ char g_sortstr[32][256] = {
 };
 
 #ifdef MANPUKU
-char g_DisplayStr[2][256] = {
-	"Allow NoRes",
-	"Deny NoRes",
+char g_DisplayStr[][256] = {
+	"Normal",
+	"Hide NoRes",
+	"Hide NoRes&Deny",
 };
 #endif // #ifdef MANPUKU
 
@@ -1180,7 +1181,7 @@ void ggn_startNetVS(void)
 
 #ifdef MANPUKU
 	CNodeMgr* g_nodeMgr;
-	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	if( g_iniFileInfo.m_NodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
 	else g_nodeMgr = ::g_nodeMgr;
 #endif // #ifdef MANPUKU
 
@@ -1211,7 +1212,7 @@ bool ggn_procNetVS(void)
 #ifdef MANPUKU
 	ENTERCS(&g_netMgr->m_csNode);
 	CNodeMgr* g_nodeMgr;
-	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	if( g_iniFileInfo.m_NodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
 	else g_nodeMgr = ::g_nodeMgr;
 	LEAVECS(&g_netMgr->m_csNode);
 
@@ -1264,7 +1265,7 @@ bool ggn_procNetVS(void)
 				}
 				readServer();
 				ENTERCS( &g_netMgr->m_csNode );
-				if( g_netMgr->m_bNodeDisplayMode ) {
+				if( g_iniFileInfo.m_NodeDisplayMode ) {
 					g_netMgr->LoadDisplayNodeMgr();
 				}
 				LEAVECS( &g_netMgr->m_csNode );
@@ -1521,7 +1522,11 @@ bool ggn_procNetVS(void)
 #ifdef MANPUKU
 			if( !g_vsnet.m_menu_visible ) {
 				ENTERCS( &g_netMgr->m_csNode );
-				if( g_netMgr->m_bNodeDisplayMode ^= true ) {
+				if( ++ g_iniFileInfo.m_NodeDisplayMode > 2 ) g_iniFileInfo.m_NodeDisplayMode = 0;
+				if( g_iniFileInfo.m_NodeDisplayMode ) {
+					if( g_iniFileInfo.m_NodeDisplayMode == 2 ) {
+						g_DisplayNodeMgr->removeAllNode();
+					}
 					g_netMgr->LoadDisplayNodeMgr();
 					g_nodeMgr = g_DisplayNodeMgr;
 				} else g_nodeMgr = ::g_nodeMgr;
@@ -2816,7 +2821,7 @@ void ggn_render(void)
 #ifdef MANPUKU
 	ENTERCS(&g_netMgr->m_csNode);
 	CNodeMgr* g_nodeMgr;
-	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	if( g_iniFileInfo.m_NodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
 	else g_nodeMgr = ::g_nodeMgr;
 	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
@@ -2868,9 +2873,9 @@ void ggn_render(void)
 		g_d3dfont->setFont(g_iniFileInfo.m_fontName, g_iniFileInfo.m_fontSize, g_iniFileInfo.m_fontAntialias, FONT_W, 0);
 #ifdef MANPUKU
 		ENTERCS(&g_netMgr->m_csNode);
-		sprintf( str, "SELECT - Training\n\nÅõ - Menu\nÅ¢ - Sort (%s)\nÅ† - Mode (%s)\nÅ~ - Exit", g_sortstr[g_vsnet.m_sortType], g_DisplayStr[g_netMgr->m_bNodeDisplayMode] );
+		sprintf( str, "SELECT - Training\n\nÅõ - Menu\nÅ¢ - Sort (%s)\nÅ† - Mode (%s)\nÅ~ - Exit", g_sortstr[g_vsnet.m_sortType], g_DisplayStr[g_iniFileInfo.m_NodeDisplayMode] );
 		LEAVECS(&g_netMgr->m_csNode);
-		drawGGXXWindow(str, -1, 470, 64, 620, 140);
+		drawGGXXWindow(str, -1, 450, 64, 620, 140);
 #else
 		sprintf(str, "Åõ - Menu\nÅ¢ - Sort (%s)\nÅ~ - Exit", g_sortstr[g_vsnet.m_sortType]);
 		drawGGXXWindow(str, -1, 470, 94, 620, 140);
@@ -3727,9 +3732,13 @@ void readIniFile(void)
 	if (g_iniFileInfo.m_ignoreSlowConnections != 0) g_iniFileInfo.m_ignoreSlowConnections = 1;
 
 #ifdef MANPUKU
-	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", 10, getIniFilePath() );
-	if( g_iniFileInfo.m_AutoReadServerInterval != 0 && g_iniFileInfo.m_AutoReadServerInterval < 10 ) g_iniFileInfo.m_AutoReadServerInterval = 10;
-	g_iniFileInfo.m_AutoReadServerSortWait = ::GetPrivateProfileInt( "Network", "AutoReadServerSortWait", 1000, getIniFilePath() );
+	g_iniFileInfo.m_NodeDisplayMode = ::GetPrivateProfileInt( "Node", "DisplayMode", 1, getIniFilePath() );
+	if( g_iniFileInfo.m_NodeDisplayMode < 0 || g_iniFileInfo.m_NodeDisplayMode > 2 ) g_iniFileInfo.m_NodeDisplayMode = 0;
+	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", DEFAULT_ARS_INTERVAL, getIniFilePath() );
+	if( g_iniFileInfo.m_AutoReadServerInterval == DEFAULT_ARS_INTERVAL ) g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Node", "AutoReadServerInterval", DEFAULT_ARS_INTERVAL, getIniFilePath() );
+	if( g_iniFileInfo.m_AutoReadServerInterval != 0 && g_iniFileInfo.m_AutoReadServerInterval < DEFAULT_ARS_INTERVAL ) g_iniFileInfo.m_AutoReadServerInterval = DEFAULT_ARS_INTERVAL;
+	g_iniFileInfo.m_AutoReadServerSortWait = ::GetPrivateProfileInt( "Network", "AutoReadServerSortWait", DEFAULT_ARS_SORT_WAIT, getIniFilePath() );
+	if( g_iniFileInfo.m_AutoReadServerInterval == DEFAULT_ARS_SORT_WAIT ) g_iniFileInfo.m_AutoReadServerSortWait = ::GetPrivateProfileInt( "Node", "AutoReadServerSortWait", DEFAULT_ARS_SORT_WAIT, getIniFilePath() );
 #endif // #ifdef MANPUKU
 
 #if _DEBUG
@@ -3748,6 +3757,11 @@ void writeIniFile(void)
 		g_iniFileInfo.m_zoomx = (float)(rect.right - rect.left) / 640.0f;
 		g_iniFileInfo.m_zoomy = (float)(rect.bottom - rect.top) / 480.0f;
 	}
+
+#ifdef MANPUKU
+	HANDLE hFile = CreateFile( getIniFilePath(), GENERIC_WRITE, 0, nullptr, TRUNCATE_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr );
+	if( hFile != INVALID_HANDLE_VALUE ) CloseHandle( hFile );
+#endif // #ifdef MANPUKU
 
 	// èëÇ´çûÇ›
 	char str[256];
@@ -3783,10 +3797,12 @@ void writeIniFile(void)
 	::WritePrivateProfileString("Network", "IgnoreSlowConnections", g_iniFileInfo.m_ignoreSlowConnections ? "1" : "0", getIniFilePath());
 
 #ifdef MANPUKU
+	_itoa( g_iniFileInfo.m_NodeDisplayMode, str, 10 );
+	::WritePrivateProfileString( "Node", "DisplayMode", str, getIniFilePath() );
 	_itoa( g_iniFileInfo.m_AutoReadServerInterval, str, 10 );
-	::WritePrivateProfileString( "Network", "AutoReadServerInterval", str, getIniFilePath() );
+	::WritePrivateProfileString( "Node", "AutoReadServerInterval", str, getIniFilePath() );
 	_itoa( g_iniFileInfo.m_AutoReadServerSortWait, str, 10 );
-	::WritePrivateProfileString( "Network", "AutoReadServerSortWait", str, getIniFilePath() );
+	::WritePrivateProfileString( "Node", "AutoReadServerSortWait", str, getIniFilePath() );
 #endif // #ifdef MANPUKU
 
 #if _DEBUG

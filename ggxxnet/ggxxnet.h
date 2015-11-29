@@ -334,6 +334,7 @@ typedef struct
 #ifdef MANPUKU
 	int m_AutoReadServerInterval;
 	int m_AutoReadServerSortWait;
+	char m_NodeDisplayMode;
 #endif // #ifdef MANPUKU
 
 #if _DEBUG // データ参照ディレクトリ
@@ -394,6 +395,9 @@ void WRITE_REPLAY_RAWDATA(int p_size);
 
 
 #ifdef MANPUKU
+
+#define DEFAULT_ARS_INTERVAL 10
+#define DEFAULT_ARS_SORT_WAIT 1000
 
 #define	LogoSkipAddr	(BYTE *)0x004A6F96
 #define LogoSkipSize	1
