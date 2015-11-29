@@ -787,6 +787,11 @@ public:
 	// for watch server
 	CWatcher	m_watcher[WATCH_MAX_CHILD];
 	int			m_recvGalleryCount;		// ‘Šè‘¤‚ÌŠÏíÒ”
+
+#ifdef MANPUKU
+	bool m_bNodeDisplayMode;
+	int m_AutoReadServerTime;
+#endif // #ifdef MANPUKU
 };
 
 // extern

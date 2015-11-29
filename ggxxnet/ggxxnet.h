@@ -331,6 +331,10 @@ typedef struct
 	//int  m_watchDataFrequency;
 	bool m_ignoreSlowConnections;
 
+#ifdef MANPUKU
+	int m_AutoReadServerInterval;
+#endif // #ifdef MANPUKU
+
 #if _DEBUG // データ参照ディレクトリ
 	char m_dataDir[256];
 #endif

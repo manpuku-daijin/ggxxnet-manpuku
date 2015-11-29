@@ -79,6 +79,13 @@ char g_sortstr[32][256] = {
 	"Watch   ", "Status  "
 };
 
+#ifdef MANPUKU
+char g_DisplayStr[2][256] = {
+	"Allow NoRes",
+	"Deny NoRes",
+};
+#endif // #ifdef MANPUKU
+
 class D3DV_GGN
 {
 public:
@@ -1088,11 +1095,14 @@ void ggn_startNetVS(void)
 		LEAVECS(&g_netMgr->m_csNode);
 	}
 
+	ENTERCS(&g_netMgr->m_csNode);
+
 #ifdef MANPUKU
-	CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+	CNodeMgr* g_nodeMgr;
+	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	else g_nodeMgr = ::g_nodeMgr;
 #endif // #ifdef MANPUKU
 
-	ENTERCS(&g_netMgr->m_csNode);
 	g_nodeMgr->sortNodeList(g_vsnet.m_sortType);
 	LEAVECS(&g_netMgr->m_csNode);
 
@@ -1118,7 +1128,11 @@ bool ggn_procNetVS(void)
 	g_netMgr->m_lobbyFrame++;
 
 #ifdef MANPUKU
-CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+	ENTERCS(&g_netMgr->m_csNode);
+	CNodeMgr* g_nodeMgr;
+	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	else g_nodeMgr = ::g_nodeMgr;
+	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
 
 	int input = (*GGXX_1PJDOWN & 0xf300) | (*GGXX_2PJDOWN & 0xf300);
@@ -1151,6 +1165,21 @@ CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
 		}
 		else pressKeyTime[i] = 0;
 	}
+
+#ifdef MANPUKU
+	if( g_iniFileInfo.m_AutoReadServerInterval ) {
+		if( g_netMgr->m_lobbyFrame <= 0 || input ) {
+			g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
+		} else if( g_netMgr->m_lobbyFrame > g_netMgr->m_AutoReadServerTime ) {
+			if( useLobbyServer() ) readServer();
+			ENTERCS( &g_netMgr->m_csNode );
+			g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
+			LEAVECS( &g_netMgr->m_csNode );
+//			GGXX_PlayCmnSound(0x3B);
+			g_netMgr->m_AutoReadServerTime = g_netMgr->m_lobbyFrame + g_iniFileInfo.m_AutoReadServerInterval * 60;
+		}
+	}
+#endif // #ifdef MANPUKU
 
 /* •`‰æ */
 	GGXX_DrawText2("VS NET", 40, 53, 5);
@@ -1366,7 +1395,7 @@ CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
 				}
 
 				GGXX_PlayCmnSound(0x3B);
-				
+
 				ENTERCS(&g_netMgr->m_csNode);
 				g_nodeMgr->sortNodeList(g_vsnet.m_sortType);
 				LEAVECS(&g_netMgr->m_csNode);
@@ -1374,6 +1403,20 @@ CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
 		}
 		else if (input & 0x8000)
 		{
+#ifdef MANPUKU
+			if( !g_vsnet.m_menu_visible ) {
+				ENTERCS( &g_netMgr->m_csNode );
+				if( g_netMgr->m_bNodeDisplayMode ^= true ) g_nodeMgr = g_DisplayNodeMgr;
+				else g_nodeMgr = ::g_nodeMgr;
+				g_nodeMgr->sortNodeList( g_vsnet.m_sortType );
+				if( g_vsnet.m_selectItemIdx >= g_nodeMgr->getNodeCount() ) g_vsnet.m_selectItemIdx = g_nodeMgr->getNodeCount() - 1;
+				if( g_vsnet.m_dispItemHead >= g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage ) g_vsnet.m_dispItemHead = g_nodeMgr->getNodeCount() - g_vsnet.m_itemPerPage;
+				if( g_vsnet.m_selectItemIdx < 0 ) g_vsnet.m_selectItemIdx = 0;
+				if( g_vsnet.m_dispItemHead < 0 ) g_vsnet.m_dispItemHead = 0;
+				LEAVECS( &g_netMgr->m_csNode );
+				GGXX_PlayCmnSound( 0x39 );
+			}
+#endif // #ifdef MANPUKU
 		}
 
 		// ‘Îíî•ñ‚Ì—v‹
@@ -2638,7 +2681,11 @@ void ggn_cleanup(void)
 void ggn_render(void)
 {
 #ifdef MANPUKU
-CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
+	ENTERCS(&g_netMgr->m_csNode);
+	CNodeMgr* g_nodeMgr;
+	if( g_netMgr->m_bNodeDisplayMode ) g_nodeMgr = g_DisplayNodeMgr;
+	else g_nodeMgr = ::g_nodeMgr;
+	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
 
 	char str[256];
@@ -2686,8 +2733,15 @@ CNodeMgr* g_nodeMgr = g_DisplayNodeMgr;
 		g_d3dfont->drawText("Win", 250, 124, 0xffffff00);
 
 		g_d3dfont->setFont(g_iniFileInfo.m_fontName, g_iniFileInfo.m_fontSize, g_iniFileInfo.m_fontAntialias, FONT_W, 0);
+#ifdef MANPUKU
+		ENTERCS(&g_netMgr->m_csNode);
+		sprintf( str, "› - Menu\n¢ - Sort (%s)\n  - Mode (%s)\n~ - Exit", g_sortstr[g_vsnet.m_sortType], g_DisplayStr[g_netMgr->m_bNodeDisplayMode] );
+		LEAVECS(&g_netMgr->m_csNode);
+		drawGGXXWindow(str, -1, 470, 84, 620, 140);
+#else
 		sprintf(str, "› - Menu\n¢ - Sort (%s)\n~ - Exit", g_sortstr[g_vsnet.m_sortType]);
 		drawGGXXWindow(str, -1, 470, 94, 620, 140);
+#endif // #ifdef MANPUKU
 		
 		sprintf(str, ": %s", g_setting.userName);
 		g_d3dfont->drawText(str, 110, 108, 0xffffffff);
@@ -3521,6 +3575,10 @@ void readIniFile(void)
 	g_iniFileInfo.m_ignoreSlowConnections = (::GetPrivateProfileInt("Network", "IgnoreSlowConnections", 1, getIniFilePath()) != 0);
 	if (g_iniFileInfo.m_ignoreSlowConnections != 0) g_iniFileInfo.m_ignoreSlowConnections = 1;
 
+#ifdef MANPUKU
+	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", 10, getIniFilePath() );
+#endif // #ifdef MANPUKU
+
 #if _DEBUG
 	::GetPrivateProfileString("Debug", "DataDir", "", buf, 1024, getIniFilePath());
 	strcpy(g_iniFileInfo.m_dataDir, buf);
@@ -3570,6 +3628,11 @@ void writeIniFile(void)
 	//::WritePrivateProfileString("Network", "WatchDataFrequency", str, getIniFilePath());
 
 	::WritePrivateProfileString("Network", "IgnoreSlowConnections", g_iniFileInfo.m_ignoreSlowConnections ? "1" : "0", getIniFilePath());
+
+#ifdef MANPUKU
+	_itoa( g_iniFileInfo.m_AutoReadServerInterval, str, 10 );
+	::WritePrivateProfileString( "Network", "AutoReadServerInterval", str, getIniFilePath() );
+#endif // #ifdef MANPUKU
 
 #if _DEBUG
 	::WritePrivateProfileString("Debug", "DataDir", g_iniFileInfo.m_dataDir, getIniFilePath());
