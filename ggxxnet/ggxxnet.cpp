@@ -1300,9 +1300,6 @@ bool ggn_procNetVS(void)
 			}
 		}
 	}
-	if( g_netMgr->m_lobbyFrame <= 0 ) {
-		g_setting.watchBroadcast = g_OrgWatchBroadcast;
-	}
 #endif // #ifdef MANPUKU
 
 /* •`‰æ */
@@ -2193,6 +2190,9 @@ void ggn_endBattle(void)
 		{
 			g_setting.totalDraw++;
 		}
+#ifdef MANPUKU
+		g_setting.watchBroadcast = g_OrgWatchBroadcast;
+#endif // #ifdef MANPUKU
 
 		writeSettingFile();
 	
@@ -3881,6 +3881,9 @@ void onDisconnect(char* p_cause)
 	saveReplayFile();
 
 	if (strcmp(p_cause, "endbattle") != 0) g_setting.totalError++;
+#ifdef MANPUKU
+		g_setting.watchBroadcast = g_OrgWatchBroadcast;
+#endif // #ifdef MANPUKU
 	writeSettingFile();
 
 	/* disconnect‚³‚ê‚½‚Æ‚«‚ÉŒÄ‚Î‚ê‚é */
