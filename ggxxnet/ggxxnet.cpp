@@ -431,6 +431,7 @@ void ggn_input(void)
 			g_netMgr->m_networkEnable = false;
 			g_netMgr->m_lobbyFrame = -1;
 		} else if( *GGXX_MODE1 & 0x1000000 ) {
+			g_netMgr->m_lobbyFrame = 0;
 			*GGXX_MODE1 = 0x200000;
 			*GGXX_MODE2 = 0x37;
 			return;
