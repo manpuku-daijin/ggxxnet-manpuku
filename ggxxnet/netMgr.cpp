@@ -1177,6 +1177,44 @@ void CNetMgr::send_debugInfo(void)
 	data.analog[1]	= *((char*)0x602944);
 	data.ggmode		= *((char*)0x602962);
 
+#ifdef MANPUKU
+	if( m_delay < 2 ) return;
+	data.ggmode = 0x77;
+
+	/*
+	004D7288  |.  D96D 0C               FLDCW   WORD PTR SS:[EBP+C]
+
+	004E5244  |> \56                    PUSH    ESI                                          ;  Case 1 of switch 004E5234
+*/
+
+	*(DWORD *)&data.cpu_name[0] = m_key[0];
+	*(DWORD *)&data.cpu_name[4] = m_key[1];
+	*(DWORD *)&data.cpu_name[8] = m_key[2];
+	*(DWORD *)&data.cpu_name[12] = m_key[3];
+	*(WORD *)&data.cpu_name[16] = m_syncChk[0];
+	*(WORD *)&data.cpu_name[18] = m_syncChk[1];
+	*(WORD *)&data.cpu_name[20] = m_syncChk[2];
+	*(WORD *)&data.cpu_name[22] = m_syncChk[3];
+
+	DWORD* const GGXX_TIME = (DWORD*)0x602760;
+	WORD*  const GGXX_1PLIFE = (WORD*)0x5ff5a0;
+	WORD*  const GGXX_2PLIFE = (WORD*)0x5ff684;
+	WORD*  const GGXX_1PTENSION = (WORD*)0x5FF540;
+	WORD*  const GGXX_2PTENSION = (WORD*)0x5FF624;
+
+	*(DWORD *)&data.cpu_name[24] = *GGXX_TIME;	
+	*(WORD *)&data.cpu_name[28] = *GGXX_1PLIFE;
+	*(WORD *)&data.cpu_name[30] = *GGXX_2PLIFE;
+	*(WORD *)&data.cpu_name[32] = *GGXX_1PTENSION;
+	*(WORD *)&data.cpu_name[34] = *GGXX_2PTENSION;
+
+	DBGOUT_LOG( "======= Sync Error My Debug Info=======\nexdebug=%02X fcw=%04x\nkey0=%08x key1=%08x key2=%08x key3=%08x\nsync0=%04x sync1=%04x sync2=%04x sync3=%04x\ntime=%08x 1pl=%04x 2pl=%04x 1pt=%04x 2pt=%04x\n========================\n",
+		data.ggmode, data.fcw,
+		*(DWORD *)&data.cpu_name[0], *(DWORD *)&data.cpu_name[4], *(DWORD *)&data.cpu_name[8], *(DWORD *)&data.cpu_name[12],
+		*(WORD *)&data.cpu_name[16], *(WORD *)&data.cpu_name[18], *(WORD *)&data.cpu_name[20], *(WORD *)&data.cpu_name[22],
+		*(DWORD *)&data.cpu_name[24], *(WORD *)&data.cpu_name[28], *(WORD *)&data.cpu_name[30], *(WORD *)&data.cpu_name[32], *(WORD *)&data.cpu_name[34] );
+#endif	// #ifdef MANPUKU
+
 	for (int i = 0; i < 5; i++)
 	{
 		udpsend(&m_remoteAddr_active, (char*)&data, sizeof(data));
@@ -2642,6 +2680,27 @@ bool CNetMgr::talking(void)
 		}
 		break;
 	case Packet_DebugInfo:
+#ifdef MANPUKU
+	{
+		SPacket_DebugInfo *data = (SPacket_DebugInfo*)&m_buf;
+		data->cpu_name[49] = '\0';
+
+		static DWORD syncChk;
+		if( syncChk == data->cpu_edx ) break;
+		syncChk = data->cpu_edx;
+
+		if( data->ggmode != 0x77 ) {
+			DBGOUT_LOG( "======= Sync Error Enemy Debug Info=======\nno data\n========================\n" );
+			break;
+		}
+
+		DBGOUT_LOG( "======= Sync Error Enemy Debug Info=======\nexdebug=%02X fcw=%04x\nkey0=%08x key1=%08x key2=%08x key3=%08x\nsync0=%04x sync1=%04x sync2=%04x sync3=%04x\ntime=%08x 1pl=%04x 2pl=%04x 1pt=%04x 2pt=%04x\n========================\n",
+			data->ggmode, data->fcw,
+			*(DWORD *)&data->cpu_name[0], *(DWORD *)&data->cpu_name[4], *(DWORD *)&data->cpu_name[8], *(DWORD *)&data->cpu_name[12],
+			*(WORD *)&data->cpu_name[16], *(WORD *)&data->cpu_name[18], *(WORD *)&data->cpu_name[20], *(WORD *)&data->cpu_name[22],
+			*(DWORD *)&data->cpu_name[24], *(WORD *)&data->cpu_name[28], *(WORD *)&data->cpu_name[30], *(WORD *)&data->cpu_name[32], *(WORD *)&data->cpu_name[34] );
+	}
+#endif	// #ifdef MANPUKU
 #if _DEBUG
 		{
 			SPacket_DebugInfo *data = (SPacket_DebugInfo*)&m_buf;

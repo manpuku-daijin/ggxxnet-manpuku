@@ -396,6 +396,8 @@ void WRITE_REPLAY_RAWDATA(int p_size);
 
 #ifdef MANPUKU
 
+extern char g_OrgWatchBroadcast;
+
 #define DEFAULT_ARS_INTERVAL 10
 #define DEFAULT_ARS_SORT_WAIT 1000
 
@@ -403,6 +405,7 @@ void WRITE_REPLAY_RAWDATA(int p_size);
 #define LogoSkipSize	1
 #define LogoSkipOrgVal	0x74
 #define LogoSkipRewVal	0xEB
+
 
 #define MES( Str )	MessageBox( NULL, Str, TEXT( "Press the ESC or ENTER to close." ), MB_OK | MB_ICONWARNING )
 #define ACSERR	TEXT( "アクセス保護の変更ができませんでした" )
@@ -426,6 +429,29 @@ template < class T, class T2 > bool RewValue( T addr, BYTE size, T2 value )
 	}
 	return false;
 }
+
+
+#define EX2HitAddr (WORD *)0x0046D472
+#define EX2HitSize	2
+#define EX2HitOrgVal	0x39E8
+#define EX2HitRewVal	0x03EB
+
+#define EX2GuardFix1Addr (BYTE *)0x0044E093
+#define EX2GuardFix1Size	1
+#define EX2GuardFix1OrgVal	0x85
+#define EX2GuardFix1RewVal	0xB8
+
+#define EX2GuardFix2Addr (DWORD *)( 0x0044E093 + 1 )
+#define EX2GuardFix2Size	4
+#define EX2GuardFix2OrgVal	0x5F956815
+#define EX2GuardFix2RewVal	0x0000FFE0
+
+#define EX2GuardFix3Addr (WORD *)( 0x0044E093 + 1 + 4 )
+#define EX2GuardFix3Size	2
+#define EX2GuardFix3OrgVal	0x7400
+#define EX2GuardFix3RewVal	0x2CEB
+
+void Ex2Fix( bool b );
 
 
 #endif // #ifdef MANPUKU

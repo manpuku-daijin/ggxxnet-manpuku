@@ -157,6 +157,11 @@ void readSettingFile(void)
 			zfread((char*)&g_setting, sizeof(SettingInfo), fp);
 		}
 
+#ifdef MANPUKU
+		g_OrgWatchBroadcast = g_setting.watchBroadcast;
+#endif // #ifdef MANPUKU
+
+
 		// 名無しチェック
 		if (g_setting.userName[0] == '\0')
 		{

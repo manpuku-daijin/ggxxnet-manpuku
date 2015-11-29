@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by ggncfg.rc
+// Microsoft Visual C++ で生成されたインクルード ファイル。
+// ggncfg.rc で使用
 //
 #define IDC_NEWCOLOR                    3
 #define IDC_SELECTCOLOR                 4
@@ -62,6 +62,8 @@
 #define IDC_STR7                        1042
 #define IDC_STRB0                       1043
 #define IDC_STR1                        1044
+#define IDC_EX2                         1047
+#define IDC_USE_EX2                     1047
 #define IDC_STRB1                       1054
 #define IDC_STRB2                       1055
 #define IDC_STRB3                       1056
@@ -76,7 +78,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_CONTROL_VALUE         1048
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

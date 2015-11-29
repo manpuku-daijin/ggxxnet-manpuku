@@ -155,8 +155,17 @@ WORD GETFCW(void)
 	return cw;
 }
 
+#ifdef MANPUKU
+#include "ggxxnet.h"
+#endif	// #ifdef MANPUKU
 void SETFCW(WORD p_cw)
 {
+#ifdef MANPUKU
+	WORD cw = GETFCW();
+	if( cw != p_cw ) {
+		DBGOUT_LOG( "fix fcw. prev %04x\n", cw );
+	}
+#endif	// #ifdef MANPUKU
 	_asm fldcw p_cw;
 }
 

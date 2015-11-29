@@ -193,6 +193,9 @@ void drawText(char* p_str, int p_x, int p_y, DWORD p_color, CD3DFont::EAlign p_a
 //******************************************************************
 
 #ifdef MANPUKU
+
+char g_OrgWatchBroadcast;
+
 #define TrainingStringAddr	0x0042B145
 char TrainingStandbyModeString[] = "TRAINING STANDBY";
 _declspec(naked) void TrainingStringSwap()
@@ -227,6 +230,20 @@ _declspec(naked) void TrainingDummySlipRecoveryFix()
 	}
 }
 
+void Ex2Fix( bool b )
+{
+	if( b ) {
+		RewValue( EX2HitAddr, EX2HitSize, EX2HitRewVal );
+		RewValue( EX2GuardFix1Addr, EX2GuardFix1Size, EX2GuardFix1RewVal );
+		RewValue( EX2GuardFix2Addr, EX2GuardFix2Size, EX2GuardFix2RewVal );
+		RewValue( EX2GuardFix3Addr, EX2GuardFix3Size, EX2GuardFix3RewVal );
+	} else {
+		RewValue( EX2HitAddr, EX2HitSize, EX2HitOrgVal );
+		RewValue( EX2GuardFix1Addr, EX2GuardFix1Size, EX2GuardFix1OrgVal );
+		RewValue( EX2GuardFix2Addr, EX2GuardFix2Size, EX2GuardFix2OrgVal );
+		RewValue( EX2GuardFix3Addr, EX2GuardFix3Size, EX2GuardFix3OrgVal );
+	}
+}
 #endif // #ifdef MANPUKU
 
 BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
@@ -1283,6 +1300,9 @@ bool ggn_procNetVS(void)
 			}
 		}
 	}
+	if( g_netMgr->m_lobbyFrame <= 0 ) {
+		g_setting.watchBroadcast = g_OrgWatchBroadcast;
+	}
 #endif // #ifdef MANPUKU
 
 /* 描画 */
@@ -1573,18 +1593,17 @@ bool ggn_procNetVS(void)
 
 	/* ネットワーク */
 		static bool oldConnect = false;
-		if (g_netMgr->m_connect && !oldConnect)
-		{
+		if( g_netMgr->m_connect && !oldConnect ) {
 			/* 試合開始 */
-			if (useLobbyServer()) enterServer(1);
-			
-			g_netMgr->setErrMsg("");
+			if( useLobbyServer() ) enterServer( 1 );
 
-			GGXX_PlayCmnSound(0x39);
-			*GGXX_MODE1		= 0x200803;
-			*GGXX_MODE2		= 0x0f;
-			GGXX_InitBattleChara(0);
-			GGXX_InitBattleChara(1);
+			g_netMgr->setErrMsg( "" );
+
+			GGXX_PlayCmnSound( 0x39 );
+			*GGXX_MODE1 = 0x200803;
+			*GGXX_MODE2 = 0x0f;
+			GGXX_InitBattleChara( 0 );
+			GGXX_InitBattleChara( 1 );
 
 			// キャラセレの時点ではフレームカウントが初期化されていないかも？
 			g_replay.m_frameCount = 0;
@@ -1592,105 +1611,105 @@ bool ggn_procNetVS(void)
 			char round = 5;
 			/* 名前・ランク等を送受信 */
 			SBlock_PlayerInfo	pinf;
-			if (g_netMgr->m_playSide == 1)
-			{
-				getNameTrip(pinf.nametrip);
-				pinf.rank  = g_setting.rank;
-				pinf.wins  = g_setting.wins;
+			if( g_netMgr->m_playSide == 1 ) {
+				getNameTrip( pinf.nametrip );
+				pinf.rank = g_setting.rank;
+				pinf.wins = g_setting.wins;
 				pinf.ex = g_setting.useEx;
 				pinf.oldcs = g_oldCS;
 				pinf.round = g_setting.rounds;	/* 自分から入る場合は使用しないが… */
 
-				if (g_netMgr->sendDataBlock(Block_PlayerInfo, (char*)&pinf, sizeof(SBlock_PlayerInfo), TIMEOUT_BLOCK) == false)
-				{
-					g_netMgr->disconnect("send block  playerinfo");
+				if( g_netMgr->sendDataBlock( Block_PlayerInfo, (char*)&pinf, sizeof( SBlock_PlayerInfo ), TIMEOUT_BLOCK ) == false ) {
+					g_netMgr->disconnect( "send block  playerinfo" );
 					return 0;
 				}
-				DBGOUT_NET("send block  playerinfo ok!\n");
+				DBGOUT_NET( "send block  playerinfo ok!\n" );
 
-				if (g_netMgr->recvDataBlock(Block_PlayerInfo, (char*)&pinf, sizeof(SBlock_PlayerInfo), TIMEOUT_BLOCK) == false)
-				{
-					g_netMgr->disconnect("recv blockplayerinfo");
+				if( g_netMgr->recvDataBlock( Block_PlayerInfo, (char*)&pinf, sizeof( SBlock_PlayerInfo ), TIMEOUT_BLOCK ) == false ) {
+					g_netMgr->disconnect( "recv blockplayerinfo" );
 					return 0;
 				}
-				DBGOUT_NET("recv blockplayerinfo ok!\n");
-				__strncpy(g_enemyInfo.m_name, pinf.nametrip, 29);
+				DBGOUT_NET( "recv blockplayerinfo ok!\n" );
+				__strncpy( g_enemyInfo.m_name, pinf.nametrip, 29 );
 				g_enemyInfo.m_rank = pinf.rank;
 				g_enemyInfo.m_wins = pinf.wins;
-				g_enemyInfo.m_ex  = pinf.ex;
+				g_enemyInfo.m_ex = pinf.ex;
 				*GGXX_CSSELECT_1P = g_oldCS;
 				*GGXX_CSSELECT_2P = pinf.oldcs;
-				round			  = pinf.round;
+				round = pinf.round;
 
 				// 互換保つため仕方なくノード検索し、ExとBroadcastのオプションを取得する
 				// プレイヤー情報の送信にブロック転送を使う必要も無く、
 				// 互換の維持を考えると今更方法を切り替えることも難しい。完全に設計を誤ったorz
 				char addrstr[32];
-				int nodeidx = g_nodeMgr->findNodeIdx_address(g_netMgr->getStringFromAddr(&g_netMgr->m_remoteAddr_active, addrstr));
-				if (nodeidx == -1)
-				{
-					g_netMgr->disconnect("node not found.");
+				int nodeidx = g_nodeMgr->findNodeIdx_address( g_netMgr->getStringFromAddr( &g_netMgr->m_remoteAddr_active, addrstr ) );
+				if( nodeidx == -1 ) {
+					g_netMgr->disconnect( "node not found." );
 					return 0;
 				}
-				if (strcmp(g_nodeMgr->getNode(nodeidx)->m_ver, "1.13") < 0)
-				{
-					g_enemyInfo.m_ex = g_nodeMgr->getNode(nodeidx)->m_ex;
+				if( strcmp( g_nodeMgr->getNode( nodeidx )->m_ver, "1.13" ) < 0 ) {
+					g_enemyInfo.m_ex = g_nodeMgr->getNode( nodeidx )->m_ex;
 				}
-				g_enemyInfo.m_watchMaxNode = g_nodeMgr->getNode(nodeidx)->m_watchMaxNode;
-				g_enemyInfo.m_gameCount = g_nodeMgr->getNode(nodeidx)->m_gamecount + 1;
-			}
-			else
-			{
-				if (g_netMgr->recvDataBlock(Block_PlayerInfo, (char*)&pinf, sizeof(SBlock_PlayerInfo), TIMEOUT_BLOCK) == false)
-				{
-					g_netMgr->disconnect("recv block playerinfo");
+				g_enemyInfo.m_watchMaxNode = g_nodeMgr->getNode( nodeidx )->m_watchMaxNode;
+				g_enemyInfo.m_gameCount = g_nodeMgr->getNode( nodeidx )->m_gamecount + 1;
+			} else {
+				if( g_netMgr->recvDataBlock( Block_PlayerInfo, (char*)&pinf, sizeof( SBlock_PlayerInfo ), TIMEOUT_BLOCK ) == false ) {
+					g_netMgr->disconnect( "recv block playerinfo" );
 					return 0;
 				}
-				DBGOUT_NET("recv blockplayerinfo ok!\n");
-				__strncpy(g_enemyInfo.m_name, pinf.nametrip, 29);
+				DBGOUT_NET( "recv blockplayerinfo ok!\n" );
+				__strncpy( g_enemyInfo.m_name, pinf.nametrip, 29 );
 				g_enemyInfo.m_rank = pinf.rank;
 				g_enemyInfo.m_wins = pinf.wins;
-				g_enemyInfo.m_ex  = pinf.ex;
+				g_enemyInfo.m_ex = pinf.ex;
 				*GGXX_CSSELECT_1P = pinf.oldcs;
 				*GGXX_CSSELECT_2P = g_oldCS;
-				round		= g_setting.rounds;
+				round = g_setting.rounds;
 
 				// 互換保つため仕方なくノード検索し、ExとBroadcastのオプションを取得する
 				// プレイヤー情報の送信にブロック転送を使う必要も無く、
 				// 互換の維持を考えると今更方法を切り替えることも難しい。完全に設計を誤ったorz
 				char addrstr[32];
-				int nodeidx = g_nodeMgr->findNodeIdx_address(g_netMgr->getStringFromAddr(&g_netMgr->m_remoteAddr_active, addrstr));
-				if (nodeidx == -1)
-				{
-					g_netMgr->disconnect("node not found.");
+				int nodeidx = g_nodeMgr->findNodeIdx_address( g_netMgr->getStringFromAddr( &g_netMgr->m_remoteAddr_active, addrstr ) );
+				if( nodeidx == -1 ) {
+					g_netMgr->disconnect( "node not found." );
 					return 0;
 				}
-				if (strcmp(g_nodeMgr->getNode(nodeidx)->m_ver, "1.13") < 0)
-				{
-					g_enemyInfo.m_ex = g_nodeMgr->getNode(nodeidx)->m_ex;
+				if( strcmp( g_nodeMgr->getNode( nodeidx )->m_ver, "1.13" ) < 0 ) {
+					g_enemyInfo.m_ex = g_nodeMgr->getNode( nodeidx )->m_ex;
 				}
-				g_enemyInfo.m_watchMaxNode = g_nodeMgr->getNode(nodeidx)->m_watchMaxNode;
-				g_enemyInfo.m_gameCount = g_nodeMgr->getNode(nodeidx)->m_gamecount + 1;
+				g_enemyInfo.m_watchMaxNode = g_nodeMgr->getNode( nodeidx )->m_watchMaxNode;
+				g_enemyInfo.m_gameCount = g_nodeMgr->getNode( nodeidx )->m_gamecount + 1;
 
-				getNameTrip(pinf.nametrip);
-				pinf.rank  = g_setting.rank;
-				pinf.wins  = g_setting.wins;
+				getNameTrip( pinf.nametrip );
+				pinf.rank = g_setting.rank;
+				pinf.wins = g_setting.wins;
 				pinf.ex = g_setting.useEx;
 				pinf.oldcs = g_oldCS;
 				pinf.round = g_setting.rounds;	/* 自分のルールに従わせる */
-				
-				if (g_netMgr->sendDataBlock(Block_PlayerInfo, (char*)&pinf, sizeof(SBlock_PlayerInfo), TIMEOUT_BLOCK) == false)
-				{
-					g_netMgr->disconnect("send block playerinfo");
+
+				if( g_netMgr->sendDataBlock( Block_PlayerInfo, (char*)&pinf, sizeof( SBlock_PlayerInfo ), TIMEOUT_BLOCK ) == false ) {
+					g_netMgr->disconnect( "send block playerinfo" );
 					return 0;
 				}
-				DBGOUT_NET("send block playerinfo ok!\n");
+				DBGOUT_NET( "send block playerinfo ok!\n" );
 			}
-			
+
 			g_setting.totalBattle++;
 
 			// Exの可不可を設定
+#ifdef MANPUKU
+			char ex_num = g_setting.useEx & g_enemyInfo.m_ex;
+			*GGXX_ggnv_cfg_enableExChara = 1 & ex_num;
+			if( ex_num & 2 ) {
+				Ex2Fix( true );
+				g_setting.watchBroadcast = 0;
+			} else {
+				Ex2Fix( false );
+			}
+#else
 			*GGXX_ggnv_cfg_enableExChara = g_setting.useEx & g_enemyInfo.m_ex;
+#endif
 
 			// クリフ・ジャスティスがデフォルトだったらソルに変更
 			if (*GGXX_ggnv_cfg_enableExChara == 0)
@@ -1836,6 +1855,11 @@ void ggn_startVS(void)
 		}
 		g_netMgr->m_initKeySet = false;
 	}
+#ifdef MANPUKU
+	else {
+		Ex2Fix( true && ( g_setting.useEx & 2 ) );
+	}
+#endif // #ifdef MANPUKU
 }
 
 DWORD ggn_vsLoadCompleted(void)
@@ -2644,7 +2668,11 @@ void ggn_endVS(void)
 			g_replay.m_data.voice2P		= (char)*GGXX_2PVOICE;
 		}
 		/* ここからReplayを記録する */
+#ifdef MANPUKU
+		g_replay.m_repRecording = !( true && (g_setting.useEx & 2) );
+#else
 		g_replay.m_repRecording = true;
+#endif // #ifdef MANPUKU
 		g_replay.m_frameCount = 0;
 
 	}
@@ -2981,7 +3009,14 @@ void ggn_render(void)
 			if (node->m_validInfo & VF_EX)
 			{
 				if (g_setting.useEx == 0) sprintf(str, "×");
+#ifdef MANPUKU
+				else {
+					char ex_str[4][3] = { "×", "○", "●", "◎" };
+					sprintf( str, ex_str[g_setting.useEx & node->m_ex] );
+				}
+#else
 				else sprintf(str, "%s", node->m_ex == 1 ? "○" : "×");
+#endif
 			}
 			else sprintf(str, "-");
 			g_d3dfont->drawText(str, X_EX, 167 + line * LINESIZE, argb, CD3DFont::Align_Center);

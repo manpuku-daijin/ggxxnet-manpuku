@@ -2,6 +2,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 #define IMG_ADDR_LIST_SIZE	2048
 #define PAL_ADDR_LIST_SIZE	12
@@ -161,4 +162,5 @@ public:
 	afx_msg void OnBnClickedMessage();
 public:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
+	CButton m_ctl_useEx2;
 };

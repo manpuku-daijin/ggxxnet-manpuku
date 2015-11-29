@@ -132,7 +132,8 @@ CggncfgDlg::~CggncfgDlg()
 
 void CggncfgDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialog::DoDataExchange( pDX );
+	DDX_Control( pDX, IDC_USE_EX2, m_ctl_useEx2 );
 }
 
 BEGIN_MESSAGE_MAP(CggncfgDlg, CDialog)
@@ -326,6 +327,12 @@ BOOL CggncfgDlg::OnInitDialog()
 
 			fseek(fp, 0x001b20, SEEK_SET);
 			fread(&decode5a, 1, 0x0dac, fp);
+#ifdef MANPUKU
+			DWORD flOldProtect;
+			VirtualProtect( decode1a, 0x81, PAGE_EXECUTE_READWRITE, &flOldProtect );
+			VirtualProtect( decode1b, 0x0078, PAGE_EXECUTE_READWRITE, &flOldProtect );
+			VirtualProtect( decode5a, 0x0dac, PAGE_EXECUTE_READWRITE, &flOldProtect );
+#endif	// #ifdef MANPUKU
 		}
 		fclose(fp);
 	}
@@ -488,8 +495,13 @@ void CggncfgDlg::readSettingFile(void)
 			}
 
 			ptr += 2; // auto connect wait 分
-
+			
+#ifdef MANPUKU
+			m_ctl_useEx->SetCheck(*ptr & 1);
+			m_ctl_useEx2.SetCheck(*ptr & 2);		ptr += 1;
+#else
 			m_ctl_useEx->SetCheck(*ptr);			ptr += 1;
+#endif	// #ifdef MANPUKU
 
 			m_ctl_dispInvCombo->SetCheck(*ptr);		ptr += 1;
 			m_ctl_showGGNVer->SetCheck(*ptr);			ptr += 1;
@@ -617,13 +629,17 @@ void CggncfgDlg::writeSettingFile(void)
 
 		m_ctl_delay->GetWindowText(tmp, 256);
 		*ptr = atoi(tmp);							ptr += 1;
-		
+
 		*ptr = m_ctl_enableChat->GetCheck();		ptr += 1;
 		*ptr = 1/*m_ctl_ignoreSlow->GetCheck()*/;	ptr += 1;	// オプションの必要性を感じないので、強制的にONとする
 
 		*((WORD*)ptr) = 0;							ptr += 2;
 
+#ifdef MANPUKU
+		*ptr = m_ctl_useEx->GetCheck() | ( m_ctl_useEx2.GetCheck() << 1 );				ptr += 1;
+#else
 		*ptr = m_ctl_useEx->GetCheck();				ptr += 1;
+#endif	// #ifdef MANPUKU
 
 		*ptr = m_ctl_dispInvCombo->GetCheck();		ptr += 1;
 		*ptr = m_ctl_showGGNVer->GetCheck();			ptr += 1;
