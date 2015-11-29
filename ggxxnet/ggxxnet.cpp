@@ -3599,7 +3599,7 @@ void readIniFile(void)
 
 #ifdef MANPUKU
 	g_iniFileInfo.m_AutoReadServerInterval = ::GetPrivateProfileInt( "Network", "AutoReadServerInterval", 10, getIniFilePath() );
-	if( g_iniFileInfo.m_AutoReadServerInterval < 10 ) g_iniFileInfo.m_AutoReadServerInterval = 10;
+	if( g_iniFileInfo.m_AutoReadServerInterval != 0 && g_iniFileInfo.m_AutoReadServerInterval < 10 ) g_iniFileInfo.m_AutoReadServerInterval = 10;
 	g_iniFileInfo.m_AutoReadServerSortWait = ::GetPrivateProfileInt( "Network", "AutoReadServerSortWait", 1000, getIniFilePath() );
 #endif // #ifdef MANPUKU
 
