@@ -422,4 +422,6 @@ template < class T, class T2 > bool RewValue( T addr, BYTE size, T2 value )
 	}
 	return false;
 }
+
+
 #endif // #ifdef MANPUKU

@@ -190,6 +190,22 @@ void drawText(char* p_str, int p_x, int p_y, DWORD p_color, CD3DFont::EAlign p_a
 //******************************************************************
 // function
 //******************************************************************
+
+#ifdef MANPUKU
+#define TrainingStringAddr	0x0042B145
+char TrainingStandbyModeString[] = "TRAINING STANDBY";
+_declspec(naked) void TrainingStringSwap()
+{
+	if( *GGXX_MODE1 & 0x1000000 ) {
+		_asm push offset TrainingStandbyModeString;
+	} else _asm push 0x00552ff0;
+	_asm {
+		mov eax, 0x0042b315;
+		jmp eax;
+	}
+}
+#endif // #ifdef MANPUKU
+
 BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 {
 	//BYTE id1[10] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff };
@@ -383,6 +399,9 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 
 #ifdef MANPUKU
 	RewValue( LogoSkipAddr, LogoSkipSize, LogoSkipRewVal );
+	RewValue( (BYTE *)TrainingStringAddr, 1, 0xe9 );
+	RewValue( (DWORD *)( TrainingStringAddr + 1 ), 4, (DWORD)TrainingStringSwap - TrainingStringAddr - 5 );
+
 #endif // #ifdef MANPUKU
 
 	return TRUE;
@@ -399,6 +418,25 @@ void ggn_input(void)
 	念のためget_Input()でも行い、毎フレーム呼ばれるようにしておく
 	*/
 	SETFCW(DEFAULT_CW);
+
+#ifdef MANPUKU
+	if( g_netMgr->m_networkEnable ) {
+		if( *GGXX_MODE2 == 0x09 ) {
+			g_netMgr->m_networkEnable = false;
+		}
+	}
+	if( g_netMgr->m_connect ) {
+		if( ! ( *GGXX_MODE1 & 0x1e00000 ) ) {
+			g_netMgr->m_connect = false;
+			g_netMgr->m_networkEnable = false;
+			g_netMgr->m_lobbyFrame = -1;
+		} else if( *GGXX_MODE1 & 0x1000000 ) {
+			*GGXX_MODE1 = 0x200000;
+			*GGXX_MODE2 = 0x37;
+			return;
+		}
+	}
+#endif	// #ifdef MANPUKU
 
 #if !TESTER
 	if (*GGXX_MODE1 & 0xe00000 && g_netMgr->m_errMsg[0] != '\0')
@@ -848,6 +886,17 @@ void ggn_input(void)
 			}
 #endif
 
+#ifdef MANPUKU
+			if( *GGXX_MODE1 & 0x1000000 ) {
+				if( ( g_netMgr->m_key[0] & 0x900 ) == 0x900 ) {
+					LEAVECS(&g_netMgr->m_csKey);
+					*GGXX_MODE1 = 0x200000;
+					*GGXX_MODE2 = 0x37;
+					return;
+				}
+			}
+#endif	// #ifdef MANPUKU
+
 			if (g_netMgr->m_connect)
 			{
 				/* ネット対戦中は1P,2Pどちら側のコントロールでも操作可能とする */
@@ -1134,8 +1183,12 @@ bool ggn_procNetVS(void)
 	else g_nodeMgr = ::g_nodeMgr;
 	LEAVECS(&g_netMgr->m_csNode);
 #endif // #ifdef MANPUKU
-
+	
+#ifdef MANPUKU
+	int input = (*GGXX_1PJDOWN & 0xf30f) | (*GGXX_2PJDOWN & 0xf30f);
+#else
 	int input = (*GGXX_1PJDOWN & 0xf300) | (*GGXX_2PJDOWN & 0xf300);
+#endif // #ifdef MANPUKU
 	static int pressKeyTime[6] = {0,0,0,0,0,0};
 	for (int i = 0; i < 6; i++)
 	{
@@ -1421,8 +1474,7 @@ bool ggn_procNetVS(void)
 				LEAVECS(&g_netMgr->m_csNode);
 			}
 		}
-		else if (input & 0x8000)
-		{
+		else if( input & 0x8000 ) {
 #ifdef MANPUKU
 			if( !g_vsnet.m_menu_visible ) {
 				ENTERCS( &g_netMgr->m_csNode );
@@ -1438,6 +1490,22 @@ bool ggn_procNetVS(void)
 				LEAVECS( &g_netMgr->m_csNode );
 				GGXX_PlayCmnSound( 0x39 );
 			}
+		} else if (input & 0x1) {
+			g_netMgr->m_lobbyFrame = 10000;
+			g_vsnet.m_menu_visible = false;
+
+			GGXX_PlayCmnSound(0x39);
+			_asm {
+				push 0;
+				push 6;
+				mov eax, 0x0045fa90;
+				call eax;
+				add esp, 0x08;
+			}
+			*GGXX_MODE1		= 0x1000101;
+			*GGXX_MODE2		= 0x0f;
+			return 1;
+
 #endif // #ifdef MANPUKU
 		}
 
@@ -1920,6 +1988,15 @@ void ggn_softReset(void)
 
 		if (useLobbyServer()) leaveServer();
 	}
+#ifdef MANPUKU
+	else if( *GGXX_MODE1 & 0x1000000 ) {
+		g_netMgr->m_networkEnable = false;
+
+		g_netMgr->m_lobbyFrame = -1;
+
+		if( useLobbyServer() ) leaveServer();
+	}
+#endif // #ifdef MANPUKU
 }
 
 void ggn_drawBattlePlayerName(DWORD p_side)
@@ -2757,9 +2834,9 @@ void ggn_render(void)
 		g_d3dfont->setFont(g_iniFileInfo.m_fontName, g_iniFileInfo.m_fontSize, g_iniFileInfo.m_fontAntialias, FONT_W, 0);
 #ifdef MANPUKU
 		ENTERCS(&g_netMgr->m_csNode);
-		sprintf( str, "○ - Menu\n△ - Sort (%s)\n□ - Mode (%s)\n× - Exit", g_sortstr[g_vsnet.m_sortType], g_DisplayStr[g_netMgr->m_bNodeDisplayMode] );
+		sprintf( str, "SELECT - Training\n\n○ - Menu\n△ - Sort (%s)\n□ - Mode (%s)\n× - Exit", g_sortstr[g_vsnet.m_sortType], g_DisplayStr[g_netMgr->m_bNodeDisplayMode] );
 		LEAVECS(&g_netMgr->m_csNode);
-		drawGGXXWindow(str, -1, 470, 84, 620, 140);
+		drawGGXXWindow(str, -1, 470, 64, 620, 140);
 #else
 		sprintf(str, "○ - Menu\n△ - Sort (%s)\n× - Exit", g_sortstr[g_vsnet.m_sortType]);
 		drawGGXXWindow(str, -1, 470, 94, 620, 140);
@@ -3937,7 +4014,11 @@ DWORD WINAPI _recvThreadProc(LPVOID lpParameter)
 		if (count == 0 && !g_netMgr->m_connect && !g_netMgr->m_watch)
 		{
 #if !TESTER
+#ifdef MANPUKU
+			if (*GGXX_MODE1 & 0x1200000)
+#else
 			if (*GGXX_MODE1 & 0x200000)
+#endif	// #ifdef MANPUKU
 #endif
 			{
 				/* 毎ループ１つping送りsendpingtimeが一定時間経過しているものにはNoResponseとする */
@@ -4053,7 +4134,11 @@ DWORD WINAPI _lobbyThreadProc(LPVOID lpParameter)
 	{
 		/* NetVSで対戦していない場合 */
 #if !TESTER
+#ifdef MANPUKU
+		if ((*GGXX_MODE1 & 0x1200000) != 0 && !g_netMgr->m_connect && !g_netMgr->m_watch)
+#else
 		if ((*GGXX_MODE1 & 0x200000) != 0 && !g_netMgr->m_connect && !g_netMgr->m_watch)
+#endif	// #ifdef MANPUKU
 #else
 		if (!g_netMgr->m_connect && !g_netMgr->m_watch)
 #endif
