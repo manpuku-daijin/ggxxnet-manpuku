@@ -246,29 +246,34 @@ void Ex2Fix( bool b )
 }
 
 
+bool bKeyConfigExchange = false;
 const char KeyConfigExchangeDisplayRewVal[] = "  P K HS";
-void WINAPI KeyConfigExchange( bool b )
+void WINAPI KeyConfigExchange( void *p )
 {
-	if( b ) {
+	if( bKeyConfigExchange ^= true ) {
 		GGXX_PlayCmnSound( 0x39 );
 
+		RewValue( (const char **)p, 4, KeyConfigExchangeDisplayRewVal );
 		RewValue( (const char **)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayRewVal );
-
+		/*
 		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
 		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
 		RewValue( KeyConfigExchangeRewAddr3, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
 		RewValue( KeyConfigExchangeRewAddr4, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
 		RewValue( KeyConfigExchangeRewAddr5, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+		*/
 	} else {
 		GGXX_PlayCmnSound( 0x3B );
 
+		RewValue( (DWORD *)p, 4, KeyConfigExchangeDisplayOrgVal );
 		RewValue( (DWORD *)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayOrgVal );
-
+		/*
 		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		RewValue( KeyConfigExchangeRewAddr3, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		RewValue( KeyConfigExchangeRewAddr4, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		RewValue( KeyConfigExchangeRewAddr5, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+		*/
 	}
 }
 _declspec( naked ) void KeyConfigExchangeHook()
@@ -278,16 +283,8 @@ _declspec( naked ) void KeyConfigExchangeHook()
 		je end;
 		cmp ecx, 0x09;
 		jnz skip;
-		mov eax, KeyConfigExchangeDisplayRewAddr;
-		cmp [eax], KeyConfigExchangeDisplayOrgVal;
-		jnz org;
-		mov dword ptr [esp + 0xf8], offset KeyConfigExchangeDisplayRewVal;
-		push 1;
-		jmp exchange;
-	org:
-		mov dword ptr [esp + 0xf8], KeyConfigExchangeDisplayOrgVal;
-		push 0;
-	exchange:
+		lea eax, [esp + 0xf8];
+		push eax;
 		call KeyConfigExchange;
 	skip:
 		add dword ptr [esp], 0x1d;
@@ -958,6 +955,30 @@ void ggn_input(void)
 			//if (xxx++ % 2 == 0) **GGXX_ggnv_InputDataPtr = 0;
 
 			ENTERCS(&g_netMgr->m_csKey);
+
+#ifdef MANPUKU
+			if( bKeyConfigExchange ) {
+				if( *GGXX_MODE2 == 6 && **GGXX_ggnv_InputDataPtr != 0x0000090f && *GGXX_BTLINFO ) {
+					DWORD p = *(DWORD *)( *GGXX_BTLINFO + 0x24 );
+					if( p ) {
+						BYTE tmpFlagBYTE[2];
+						tmpFlagBYTE[0] = *(BYTE *)( p + 0x5a );
+						tmpFlagBYTE[1] = *(BYTE *)( p + 0x5b );
+						WORD PKS_Flag = tmpFlagBYTE[1] | tmpFlagBYTE[0] << 8;
+
+						if( **GGXX_ggnv_InputDataPtr & PKS_Flag ) {
+							**GGXX_ggnv_InputDataPtr &= ~PKS_Flag;
+
+							WORD tmpFlag = *(WORD *)( p + 0x4e ) | *(WORD *)( p + 0x4a ) | *(WORD *)( p + 0x48 );
+							tmpFlagBYTE[0] = (BYTE)tmpFlag;
+							tmpFlagBYTE[1] = (BYTE)( tmpFlag >> 8 );
+							PKS_Flag = tmpFlagBYTE[1] | tmpFlagBYTE[0] << 8;
+							**GGXX_ggnv_InputDataPtr |= PKS_Flag;
+						}
+					}
+				}
+			}
+#endif // #ifdef MANPUKU
 
 			for (int i = g_netMgr->m_queueSize - 1; i > 0; i--)
 			{

@@ -459,7 +459,7 @@ void Ex2Fix( bool b );
 
 #define KeyConfigExchangeDisplayRewAddr	0x0045AF83
 #define KeyConfigExchangeDisplayOrgVal	0x00566088
-
+/*
 #define KeyConfigExchangeSize	1
 #define KeyConfigExchangeOrgVal	0x4c
 #define KeyConfigExchangeRewVal	0x4e
@@ -468,7 +468,7 @@ void Ex2Fix( bool b );
 #define KeyConfigExchangeRewAddr3	(BYTE *)0x0044C103
 #define KeyConfigExchangeRewAddr4	(BYTE *)0x0044C063
 #define KeyConfigExchangeRewAddr5	(BYTE *)0x0044BFC3
-
+*/
 
 
 

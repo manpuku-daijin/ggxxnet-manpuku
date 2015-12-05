@@ -1,4 +1,4 @@
-GGXXNET Ver1.22-3 (Last Update:2015/12/05)
+GGXXNET Ver1.22-4 (Last Update:2015/12/05)
 
 
 【インストール】
@@ -43,6 +43,8 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 　　Ver1.22-3
 　　・開発環境をVS2015に移行した(ランタイムの新規DL、インストールが必要)
 　　・KEY CONFIGでPKSにカーソルを合わせて十字キーの←→でPKHS同時押しとの切り替えを可能にした(終了時に保存されない)
+　　Ver1.22-4
+　　・PKHS同時押し切り替え中のネット対戦時のシンクエラーを修正した
 　2015/04/02
 　　Ver1.22-2
 　　・オートリロードの際に強制終了することがあるのを修正した

@@ -5,7 +5,7 @@ Module: zlib-1.2.8
         directx8 sdk (oct2004)
 
 プリプロセッサの定義にMANPUKUを追加
-プラットフォームツールセットをVisual Studio 2013 - Windows XP (v120_xp)に設定
+プラットフォームツールセットをVisual Studio 2015 - Windows XP (v140_xp)に設定
 ランタイムライブラリをマルチスレッド (/MT)に設定
 最低限必要なバージョンの設定削除
 安全な例外ハンドラーを含むイメージをいいえ (/SAFESEH:NO)に設定
