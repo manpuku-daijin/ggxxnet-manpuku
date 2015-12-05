@@ -454,4 +454,24 @@ template < class T, class T2 > bool RewValue( T addr, BYTE size, T2 value )
 void Ex2Fix( bool b );
 
 
+#define KeyConfigExchangeHookAddr1	0x0045B388
+#define KeyConfigExchangeHookAddr2	0x0045B3CB
+
+#define KeyConfigExchangeDisplayRewAddr	0x0045AF83
+#define KeyConfigExchangeDisplayOrgVal	0x00566088
+
+#define KeyConfigExchangeSize	1
+#define KeyConfigExchangeOrgVal	0x4c
+#define KeyConfigExchangeRewVal	0x4e
+#define KeyConfigExchangeRewAddr1	(BYTE *)0x0044BF26
+#define KeyConfigExchangeRewAddr2	(BYTE *)0x0044BE8B
+#define KeyConfigExchangeRewAddr3	(BYTE *)0x0044C103
+#define KeyConfigExchangeRewAddr4	(BYTE *)0x0044C063
+#define KeyConfigExchangeRewAddr5	(BYTE *)0x0044BFC3
+
+
+
+
+
+
 #endif // #ifdef MANPUKU

@@ -1,6 +1,6 @@
 yƒrƒ‹ƒhŠÂ‹«z
 OS:     Windows7(x64)
-IDE:    Microsoft Visual Studio 2013
+IDE:    Microsoft Visual Studio 2015
 Module: zlib-1.2.8
         directx8 sdk (oct2004)
 

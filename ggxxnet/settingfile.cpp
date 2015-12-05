@@ -213,13 +213,13 @@ void readSettingFile(void)
 void writeSettingFile(void)
 {
 	char datPath[1024];
-	sprintf(datPath, "%s/"DATNAME, g_moduleDir);
+	sprintf(datPath, "%s/" DATNAME, g_moduleDir);
 
 	// バックアップ取る
 	if (g_setting.ver != DATVERSION)
 	{
 		char olddatPath[1024];
-		sprintf(olddatPath, "%s/"DATNAME"_old", g_moduleDir);
+		sprintf(olddatPath, "%s/" DATNAME"_old", g_moduleDir);
 
 		remove(olddatPath);
 		rename(datPath, olddatPath);

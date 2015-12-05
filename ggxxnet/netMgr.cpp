@@ -1033,7 +1033,7 @@ void CNetMgr::send_comment(void)
 {
 	SPacket_Comment data;
 	data.packetType	= Packet_Comment;
-	data.size = strnlen(g_setting.msg, 256);
+	data.size = (BYTE)strnlen(g_setting.msg, 256);
 	__strncpy(data.msg, g_setting.msg, data.size);
 	udpsend(&m_remoteAddr_recv, (char*)&data, sizeof(char) * 3 + data.size);
 }

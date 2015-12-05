@@ -244,6 +244,58 @@ void Ex2Fix( bool b )
 		RewValue( EX2GuardFix3Addr, EX2GuardFix3Size, EX2GuardFix3OrgVal );
 	}
 }
+
+
+const char KeyConfigExchangeDisplayRewVal[] = "  P K HS";
+void WINAPI KeyConfigExchange( bool b )
+{
+	if( b ) {
+		GGXX_PlayCmnSound( 0x39 );
+
+		RewValue( (const char **)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayRewVal );
+
+		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+		RewValue( KeyConfigExchangeRewAddr3, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+		RewValue( KeyConfigExchangeRewAddr4, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+		RewValue( KeyConfigExchangeRewAddr5, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
+	} else {
+		GGXX_PlayCmnSound( 0x3B );
+
+		RewValue( (DWORD *)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayOrgVal );
+
+		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+		RewValue( KeyConfigExchangeRewAddr3, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+		RewValue( KeyConfigExchangeRewAddr4, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+		RewValue( KeyConfigExchangeRewAddr5, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
+	}
+}
+_declspec( naked ) void KeyConfigExchangeHook()
+{
+	_asm {
+		cmp ecx, 0x0b;
+		je end;
+		cmp ecx, 0x09;
+		jnz skip;
+		mov eax, KeyConfigExchangeDisplayRewAddr;
+		cmp [eax], KeyConfigExchangeDisplayOrgVal;
+		jnz org;
+		mov dword ptr [esp + 0xf8], offset KeyConfigExchangeDisplayRewVal;
+		push 1;
+		jmp exchange;
+	org:
+		mov dword ptr [esp + 0xf8], KeyConfigExchangeDisplayOrgVal;
+		push 0;
+	exchange:
+		call KeyConfigExchange;
+	skip:
+		add dword ptr [esp], 0x1d;
+	end:
+		retn;
+	}
+}
+
 #endif // #ifdef MANPUKU
 
 BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
@@ -404,6 +456,11 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		RewValue( (DWORD *)( TrainingDummyActionFixAddr + 1 ), 4, (DWORD)TrainingDummyActionFix - TrainingDummyActionFixAddr - 5 );
 		RewValue( (BYTE *)TrainingDummySlipRecoveryFixAddr, 1, 0xe8 );
 		RewValue( (DWORD *)( TrainingDummySlipRecoveryFixAddr + 1 ), 4, (DWORD)TrainingDummySlipRecoveryFix - TrainingDummySlipRecoveryFixAddr - 5 );
+
+		RewValue( (BYTE *)KeyConfigExchangeHookAddr1, 1, 0xe8 );
+		RewValue( (DWORD *)( KeyConfigExchangeHookAddr1 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigExchangeHookAddr1 - 5 );
+		RewValue( (BYTE *)KeyConfigExchangeHookAddr2, 1, 0xe8 );
+		RewValue( (DWORD *)( KeyConfigExchangeHookAddr2 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigExchangeHookAddr2 - 5 );
 #endif // #ifdef MANPUKU
 
 		DBGOUT_LOG("dll load ok!!\n");
