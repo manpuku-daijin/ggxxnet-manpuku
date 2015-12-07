@@ -959,7 +959,8 @@ void ggn_input(void)
 #ifdef MANPUKU
 			if( bKeyConfigExchange ) {
 				if( *GGXX_MODE2 == 6 && **GGXX_ggnv_InputDataPtr != 0x0000090f && *GGXX_BTLINFO ) {
-					DWORD p = *(DWORD *)( *GGXX_BTLINFO + 0x24 );
+					DWORD offset = 0x24 + 0x104 * ( g_netMgr->m_playSide == 2 );
+					DWORD p = *(DWORD *)( *GGXX_BTLINFO + offset );
 					if( p ) {
 						BYTE tmpFlagBYTE[2];
 						tmpFlagBYTE[0] = *(BYTE *)( p + 0x5a );

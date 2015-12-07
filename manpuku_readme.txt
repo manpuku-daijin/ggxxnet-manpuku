@@ -1,4 +1,4 @@
-GGXXNET Ver1.22-4 (Last Update:2015/12/05)
+GGXXNET Ver1.22-5 (Last Update:2015/12/08)
 
 
 【インストール】
@@ -39,6 +39,9 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 
 
 【更新履歴】
+　2015/12/08
+　　Ver1.22-5
+　　・PKHS同時押し切り替え中のネット対戦被乱入時のキー配置がおかしくなるのを修正した
 　2015/12/05
 　　Ver1.22-3
 　　・開発環境をVS2015に移行した(ランタイムの新規DL、インストールが必要)
