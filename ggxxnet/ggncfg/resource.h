@@ -12,8 +12,8 @@
 #define IDC_SHOWLOG                     8
 #define IDC_MESSAGE                     8
 #define IDD_GGNCFG_DIALOG               102
+#define IDD_EXTRAOPTIONDLG              103
 #define IDR_MAINFRAME                   128
-#define IDD_DIALOG1                     131
 #define IDD_EDITMSGDLG                  131
 #define IDC_ENABLE_NET                  1003
 #define IDC_DISP_INV_COMBO              1004
@@ -62,23 +62,30 @@
 #define IDC_STR7                        1042
 #define IDC_STRB0                       1043
 #define IDC_STR1                        1044
-#define IDC_EX2                         1047
-#define IDC_USE_EX2                     1047
+#define IDC_USE_EX2                     1048
+#define IDC_EXTRA_OPTION_BUTTON         1048
+#define IDC_USE_KEY_HOOK                1049
+#define IDC_KEY_STATIC                  1052
+#define IDC_NETWORK_STATIC              1053
 #define IDC_STRB1                       1054
 #define IDC_STRB2                       1055
+#define IDC_COMBO_VER_DENY              1055
 #define IDC_STRB3                       1056
+#define IDC_USE_VER_DENY                1056
 #define IDC_STRB4                       1057
 #define IDC_STRB5                       1058
 #define IDC_STRB6                       1059
 #define IDC_STRB7                       1060
+#define IDC_PKS                         2000
+#define IDC_PKHS                        2001
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        132
+#define _APS_NEXT_RESOURCE_VALUE        137
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1048
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_CONTROL_VALUE         1057
+#define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

@@ -6,6 +6,7 @@
 #include "ggncfgDlg.h"
 #include "ColorEditDlg.h"
 #include "EditMsgDlg.h"
+#include "ExtraOptionDlg.h"
 
 #include "../zlib.h"
 #include "../sharedMemory.h"
@@ -133,7 +134,6 @@ CggncfgDlg::~CggncfgDlg()
 void CggncfgDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange( pDX );
-	DDX_Control( pDX, IDC_USE_EX2, m_ctl_useEx2 );
 }
 
 BEGIN_MESSAGE_MAP(CggncfgDlg, CDialog)
@@ -158,6 +158,7 @@ BEGIN_MESSAGE_MAP(CggncfgDlg, CDialog)
 	ON_BN_CLICKED(IDC_DELETEADDR, &CggncfgDlg::OnBnClickedDeleteaddr)
 	ON_BN_CLICKED(IDC_MESSAGE, &CggncfgDlg::OnBnClickedMessage)
 	ON_WM_DROPFILES()
+	ON_BN_CLICKED( IDC_EXTRA_OPTION_BUTTON, &CggncfgDlg::OnBnClickedExtraOptionButton )
 END_MESSAGE_MAP()
 
 
@@ -305,6 +306,14 @@ BOOL CggncfgDlg::OnInitDialog()
 	m_ctl_editChara->AddString("Kliff");
 	m_ctl_editChara->AddString("Justice");
 	m_ctl_editChara->SetCurSel(0);
+
+#ifdef MANPUKU
+	m_useEx2 = false;
+	m_useKeyHook = true;
+	m_KeyChangeFlag = false;
+
+	m_useVersionDeny = false;
+#endif // #ifdef MANPUKU
 	
 	readSettingFile();
 	
@@ -464,7 +473,16 @@ void CggncfgDlg::readSettingFile(void)
 				}
 			}
 
+#ifdef MANPUKU
+			if( m_datVersion >= 110 ) {
+				m_ctl_userName->SetWindowText( ptr );	ptr += 22;
+				strncpy( m_VersionDenyStr, ptr, 9 );
+				m_VersionDenyStr[9] = '\0';
+				ptr += 19;
+			}
+#else
 			if (m_datVersion >= 110){ m_ctl_userName->SetWindowText(ptr);	ptr += 41; }
+#endif	// #ifdef MANPUKU
 			else					{ m_ctl_userName->SetWindowText(ptr);	ptr += 11; }
 
 			m_ctl_trip->SetWindowText(ptr);				ptr += 11;
@@ -498,13 +516,21 @@ void CggncfgDlg::readSettingFile(void)
 			
 #ifdef MANPUKU
 			m_ctl_useEx->SetCheck(*ptr & 1);
-			m_ctl_useEx2.SetCheck(*ptr & 2);		ptr += 1;
+			m_useEx2 = true && ( *ptr & 2 );		ptr += 1;
+
+			m_ctl_dispInvCombo->SetCheck( *ptr & 1 );
+			m_useKeyHook = true && ( *ptr & 2 );
+			m_KeyChangeFlag = true && ( *ptr & 4 );
+			ptr += 1;
+
+			m_ctl_showGGNVer->SetCheck( *ptr & 1 );
+			m_useVersionDeny = true && ( *ptr & 2 );
+			ptr += 1;
 #else
 			m_ctl_useEx->SetCheck(*ptr);			ptr += 1;
-#endif	// #ifdef MANPUKU
-
-			m_ctl_dispInvCombo->SetCheck(*ptr);		ptr += 1;
+			m_ctl_dispInvCombo->SetCheck( *ptr );		ptr += 1;
 			m_ctl_showGGNVer->SetCheck(*ptr);			ptr += 1;
+#endif	// #ifdef MANPUKU
 
 			m_setting_wins = *((WORD*)ptr);			ptr += 2;
 			m_setting_rank = *ptr;					ptr += 1;
@@ -619,7 +645,13 @@ void CggncfgDlg::writeSettingFile(void)
 			}
 		}
 
+#ifdef MANPUKU
+		m_ctl_userName->GetWindowText( ptr, 41 );		ptr += 22;
+		strncpy( ptr, m_VersionDenyStr, 10 );
+		ptr += 19;
+#else
 		m_ctl_userName->GetWindowText(ptr, 41);		ptr += 41;
+#endif	// #ifdef MANPUKU
 
 		m_ctl_trip->GetWindowText(ptr, 11);			ptr += 11;
 		*ptr = m_ctl_enableNet->GetCheck();			ptr += 1;
@@ -636,14 +668,18 @@ void CggncfgDlg::writeSettingFile(void)
 		*((WORD*)ptr) = 0;							ptr += 2;
 
 #ifdef MANPUKU
-		*ptr = m_ctl_useEx->GetCheck() | ( m_ctl_useEx2.GetCheck() << 1 );				ptr += 1;
+		*ptr = m_ctl_useEx->GetCheck() | ( m_useEx2 << 1 );
+		ptr += 1;
+		*ptr = m_ctl_dispInvCombo->GetCheck() | ( m_useKeyHook << 1 ) | ( m_KeyChangeFlag << 2 );
+		ptr += 1;
+		*ptr = m_ctl_showGGNVer->GetCheck() | ( m_useVersionDeny << 1 );
+		ptr += 1;
 #else
 		*ptr = m_ctl_useEx->GetCheck();				ptr += 1;
+		*ptr = m_ctl_dispInvCombo->GetCheck();		ptr += 1;
+		*ptr = m_ctl_showGGNVer->GetCheck();		ptr += 1;
 #endif	// #ifdef MANPUKU
 
-		*ptr = m_ctl_dispInvCombo->GetCheck();		ptr += 1;
-		*ptr = m_ctl_showGGNVer->GetCheck();			ptr += 1;
-		
 		*((WORD*)ptr) = m_setting_wins;				ptr += 2;
 		*ptr = m_setting_rank;						ptr += 1;
 
@@ -1559,4 +1595,11 @@ void CggncfgDlg::OnDropFiles(HDROP hDropInfo)
 	}
 
 	CDialog::OnDropFiles(hDropInfo);
+}
+
+
+void CggncfgDlg::OnBnClickedExtraOptionButton()
+{
+	CExtraOptionDlg dlg( this );
+	dlg.DoModal();
 }

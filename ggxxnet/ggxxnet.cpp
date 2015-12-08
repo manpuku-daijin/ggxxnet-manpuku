@@ -246,15 +246,16 @@ void Ex2Fix( bool b )
 }
 
 
-bool bKeyConfigExchange = false;
-const char KeyConfigExchangeDisplayRewVal[] = "  P K HS";
+bool bKeyConfigHook = false;
+bool bKeyConfigFlag = false;
+const char KeyConfigDisplayModifyPKHSRewVal[] = "  P K HS";
 void WINAPI KeyConfigExchange( void *p )
 {
-	if( bKeyConfigExchange ^= true ) {
+	if( bKeyConfigFlag ^= true ) {
 		GGXX_PlayCmnSound( 0x39 );
 
-		RewValue( (const char **)p, 4, KeyConfigExchangeDisplayRewVal );
-		RewValue( (const char **)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayRewVal );
+		RewValue( (const char **)p, 4, KeyConfigDisplayModifyPKHSRewVal );
+		RewValue( (const char **)KeyConfigDisplayModifyRewAddr, 4, KeyConfigDisplayModifyPKHSRewVal );
 		/*
 		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
 		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeRewVal );
@@ -265,8 +266,8 @@ void WINAPI KeyConfigExchange( void *p )
 	} else {
 		GGXX_PlayCmnSound( 0x3B );
 
-		RewValue( (DWORD *)p, 4, KeyConfigExchangeDisplayOrgVal );
-		RewValue( (DWORD *)KeyConfigExchangeDisplayRewAddr, 4, KeyConfigExchangeDisplayOrgVal );
+		RewValue( (DWORD *)p, 4, KeyConfigDisplayModifyOrgVal );
+		RewValue( (DWORD *)KeyConfigDisplayModifyRewAddr, 4, KeyConfigDisplayModifyOrgVal );
 		/*
 		RewValue( KeyConfigExchangeRewAddr1, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		RewValue( KeyConfigExchangeRewAddr2, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
@@ -275,6 +276,7 @@ void WINAPI KeyConfigExchange( void *p )
 		RewValue( KeyConfigExchangeRewAddr5, KeyConfigExchangeSize, KeyConfigExchangeOrgVal );
 		*/
 	}
+	writeSettingFile();
 }
 _declspec( naked ) void KeyConfigExchangeHook()
 {
@@ -454,10 +456,16 @@ BOOL WINAPI DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID lpReserved)
 		RewValue( (BYTE *)TrainingDummySlipRecoveryFixAddr, 1, 0xe8 );
 		RewValue( (DWORD *)( TrainingDummySlipRecoveryFixAddr + 1 ), 4, (DWORD)TrainingDummySlipRecoveryFix - TrainingDummySlipRecoveryFixAddr - 5 );
 
-		RewValue( (BYTE *)KeyConfigExchangeHookAddr1, 1, 0xe8 );
-		RewValue( (DWORD *)( KeyConfigExchangeHookAddr1 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigExchangeHookAddr1 - 5 );
-		RewValue( (BYTE *)KeyConfigExchangeHookAddr2, 1, 0xe8 );
-		RewValue( (DWORD *)( KeyConfigExchangeHookAddr2 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigExchangeHookAddr2 - 5 );
+		if( bKeyConfigHook ) {
+			RewValue( (BYTE *)KeyConfigHookAddr1, 1, 0xe8 );
+			RewValue( (DWORD *)( KeyConfigHookAddr1 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigHookAddr1 - 5 );
+			RewValue( (BYTE *)KeyConfigHookAddr2, 1, 0xe8 );
+			RewValue( (DWORD *)( KeyConfigHookAddr2 + 1 ), 4, (DWORD)KeyConfigExchangeHook - KeyConfigHookAddr2 - 5 );
+
+			if( bKeyConfigFlag ) {
+				RewValue( (const char **)KeyConfigDisplayModifyRewAddr, 4, KeyConfigDisplayModifyPKHSRewVal );
+			}
+		}
 #endif // #ifdef MANPUKU
 
 		DBGOUT_LOG("dll load ok!!\n");
@@ -957,7 +965,7 @@ void ggn_input(void)
 			ENTERCS(&g_netMgr->m_csKey);
 
 #ifdef MANPUKU
-			if( bKeyConfigExchange ) {
+			if( bKeyConfigHook ) {
 				if( *GGXX_MODE2 == 6 && **GGXX_ggnv_InputDataPtr != 0x0000090f && *GGXX_BTLINFO ) {
 					DWORD offset = 0x24 + 0x104 * ( g_netMgr->m_playSide == 2 );
 					DWORD p = *(DWORD *)( *GGXX_BTLINFO + offset );
@@ -970,7 +978,9 @@ void ggn_input(void)
 						if( **GGXX_ggnv_InputDataPtr & PKS_Flag ) {
 							**GGXX_ggnv_InputDataPtr &= ~PKS_Flag;
 
-							WORD tmpFlag = *(WORD *)( p + 0x4e ) | *(WORD *)( p + 0x4a ) | *(WORD *)( p + 0x48 );
+							offset = 0x4c + 2 * bKeyConfigFlag;
+
+							WORD tmpFlag = *(WORD *)( p + offset ) | *(WORD *)( p + 0x4a ) | *(WORD *)( p + 0x48 );
 							tmpFlagBYTE[0] = (BYTE)tmpFlag;
 							tmpFlagBYTE[1] = (BYTE)( tmpFlag >> 8 );
 							PKS_Flag = tmpFlagBYTE[1] | tmpFlagBYTE[0] << 8;
@@ -1788,7 +1798,7 @@ bool ggn_procNetVS(void)
 			}
 #else
 			*GGXX_ggnv_cfg_enableExChara = g_setting.useEx & g_enemyInfo.m_ex;
-#endif
+#endif		// #ifdef MANPUKU
 
 			// クリフ・ジャスティスがデフォルトだったらソルに変更
 			if (*GGXX_ggnv_cfg_enableExChara == 0)
@@ -3141,6 +3151,10 @@ void ggn_render(void)
 			case State_Watch_Playable:	strcpy(str, "Watch");		break;
 			case State_Busy_Casting:	strcpy(str, "Busy(Casting)");	break;
 			case State_Busy_Casting_NG:	strcpy(str, "Busy(Casting)");	break;
+
+#ifdef MANPUKU
+			case State_VersionDeny:	sprintf( str, "Version %s", node->m_ver );	break;
+#endif // #ifdef MANPUKU
 			}
 			
 			if ((node->m_validInfo & VF_ID) && node->m_deny) strcpy(str, "Denied");

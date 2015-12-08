@@ -398,7 +398,7 @@ void WRITE_REPLAY_RAWDATA(int p_size);
 
 extern char g_OrgWatchBroadcast;
 
-#define DEFAULT_ARS_INTERVAL 10
+#define DEFAULT_ARS_INTERVAL 60
 #define DEFAULT_ARS_SORT_WAIT 1000
 
 #define	LogoSkipAddr	(BYTE *)0x004A6F96
@@ -454,11 +454,14 @@ template < class T, class T2 > bool RewValue( T addr, BYTE size, T2 value )
 void Ex2Fix( bool b );
 
 
-#define KeyConfigExchangeHookAddr1	0x0045B388
-#define KeyConfigExchangeHookAddr2	0x0045B3CB
+extern bool bKeyConfigHook;
+extern bool bKeyConfigFlag;
 
-#define KeyConfigExchangeDisplayRewAddr	0x0045AF83
-#define KeyConfigExchangeDisplayOrgVal	0x00566088
+#define KeyConfigHookAddr1	0x0045B388
+#define KeyConfigHookAddr2	0x0045B3CB
+
+#define KeyConfigDisplayModifyRewAddr	0x0045AF83
+#define KeyConfigDisplayModifyOrgVal	0x00566088
 /*
 #define KeyConfigExchangeSize	1
 #define KeyConfigExchangeOrgVal	0x4c

@@ -12,6 +12,10 @@
 #include <ws2tcpip.h>
 #include "res/resource.h"
 
+#ifdef MANPUKU
+#include "node.h"
+#endif // #ifdef MANPUKU
+
 //******************************************************************
 // defines
 //******************************************************************
@@ -135,6 +139,11 @@ enum EStateType
 	State_Watch_Playable,	// 観戦中だが対戦要求に応じる
 	State_Busy_Casting,		// 対戦中で観戦可能
 	State_Busy_Casting_NG,	// 対戦中で観戦可能だが、まだキャラセレ中
+
+#ifdef MANPUKU
+	State_VersionDeny,
+#endif // #ifdef MANPUKU
+
 };
 
 enum EValidFlag{
@@ -665,7 +674,13 @@ public:
 	void send_compWatchDataReply(int p_compsize, int p_rawsize);
 	bool send_ping(sockaddr_in* p_addr, int p_selNodeIdx);
 	void send_pingReply120(bool p_needDetail, bool p_deny, bool p_underV113);
-	void send_pingReply(bool p_deny);
+
+#ifdef MANPUKU
+	void send_pingReply( CNode* node, bool bNotReady );
+#else
+	void send_pingReply( bool p_deny );
+#endif // #ifdef MANPUKU
+
 	void send_comment(void);
 	void send_vsLoadCompleted(void);
 	bool send_suspend(void);

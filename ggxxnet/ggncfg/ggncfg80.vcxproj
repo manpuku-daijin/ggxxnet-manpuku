@@ -152,6 +152,7 @@
     <ClCompile Include="..\zlib.cpp" />
     <ClCompile Include="ColorEditDlg.cpp" />
     <ClCompile Include="EditMsgDlg.cpp" />
+    <ClCompile Include="ExtraOptionDlg.cpp" />
     <ClCompile Include="ggncfg.cpp" />
     <ClCompile Include="ggncfgDlg.cpp" />
   </ItemGroup>
@@ -160,6 +161,7 @@
     <ClInclude Include="..\zlib.h" />
     <ClInclude Include="ColorEditDlg.h" />
     <ClInclude Include="EditMsgDlg.h" />
+    <ClInclude Include="ExtraOptionDlg.h" />
     <ClInclude Include="ggncfg.h" />
     <ClInclude Include="ggncfgDlg.h" />
     <ClInclude Include="Resource.h" />

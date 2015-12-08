@@ -162,5 +162,11 @@ public:
 	afx_msg void OnBnClickedMessage();
 public:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
-	CButton m_ctl_useEx2;
+	bool m_useEx2;
+	afx_msg void OnBnClickedExtraOptionButton();
+
+	bool m_useKeyHook;
+	bool m_KeyChangeFlag;
+	bool m_useVersionDeny;
+	char m_VersionDenyStr[10];
 };

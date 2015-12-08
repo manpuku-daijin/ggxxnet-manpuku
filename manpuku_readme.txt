@@ -1,4 +1,4 @@
-GGXXNET Ver1.22-5 (Last Update:2015/12/08)
+GGXXNET Ver1.23 (Last Update:2015/12/09)
 
 
 【インストール】
@@ -22,13 +22,23 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 
 
 【コンフィグ】
-　<Others>
+　<Extra Option>
+　　<Network>
 　　　Enable Ex2			: Ex2モードを適用します。
 　　　						　ヒットストップなし、ノックバックをコンボでキャンセル可能
 　　　						　ガードバランスゲージデフォルト値-32＆ガードによる上昇無し
 　　　						　ネット対戦時は双方が有効の場合のみ適用
 　　　						　リプレイ保存及び被観戦不可
 　　　						　ロビー表示 ×=通常, ○=Exのみ, ●=Ex2のみ, ◎=Ex&Ex2
+
+　　　Enable Version Deny	: 下位バージョンへの応答拒否設定を適用します。
+　　　						　リストで選んだバージョン未満のノードにIdleの代わりにNotReadyを送り返します。
+　　<Key>
+　　　Enable Modify			: 3ボタン同時押し処理を修正します。
+
+　　　PKS					: 3ボタン同時押し処理をPKSに設定します。
+
+　　　PKHS					: 3ボタン同時押し処理をPKHSに設定します。(Enable Modifyチェック時有効)
 
 
 【iniファイルについて】
@@ -39,6 +49,15 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 
 
 【更新履歴】
+　2015/12/09
+　　Ver1.23
+　　・ggxxnet_config.exeにExtra Optionボタンを追加した
+　　　・Enable Ex2ボタンをExtra Optionに移行した
+　　　・Keyグループ内のEnable Modifyをチェックすることで3ボタン同時押し処理を修正するようにした
+　　　・PKSとPKHSを選べるようにした(ゲーム内での変更も適用される)
+　　　・下位バージョンへの応答拒否設定を追加した
+　　・AutoReadServerIntervalの最低値及び基本値を60に変更した
+　　・被観戦を許可していないノードに観戦を許可しないようにした(対戦相手が過去バージョンの場合は対戦相手経由で観戦可能)
 　2015/12/08
 　　Ver1.22-5
 　　・PKHS同時押し切り替え中のネット対戦被乱入時のキー配置がおかしくなるのを修正した
@@ -86,7 +105,7 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 　　　ロビーに戻る際にロビーカウンタをリセットしてすぐにトレーニング待ち受けに戻らないようにした
 　　・DLLデタッチ時にもクライアント書き換えしてしまっていたのを修正した
 　2015/02/26
-　Ver1.21-1
+　　Ver1.21-1
 　　・トレーニング待ち受け中の被乱入時にロビーカウンタをリセットするようにした
 　　Ver1.21
 　　・トレーニング待ち受けモードを追加した(SELECTで待ち受け、待ち受け中にSELECT+STARTでロビーに戻る)

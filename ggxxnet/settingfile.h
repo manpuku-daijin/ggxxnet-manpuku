@@ -166,6 +166,13 @@ typedef struct
 
 #pragma pack(pop)
 
+
+#ifdef MANPUKU
+extern bool bVersionDeny;
+extern char VersionDenyStr[10];
+#endif // #ifdef MANPUKU
+
+
 //******************************************************************
 // proto types
 //******************************************************************

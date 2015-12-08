@@ -824,7 +824,19 @@ bool CNetMgr::send_ping(sockaddr_in* p_addr, int p_selNodeIdx)
 	data.ex			= g_setting.useEx;
 	data.wins		= g_setting.wins;
 	data.rank		= g_setting.rank;
-	data.notready	= g_vsnet.m_menu_visible || (m_lobbyFrame < g_setting.wait * 60 + 30);
+
+#ifdef MANPUKU
+	bool bNotReady = false;
+	if( bVersionDeny ) {
+		if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+			bNotReady = true;
+		}
+	}
+	data.notready = bNotReady || g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
+#else
+	data.notready = g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
+#endif // #ifdef MANPUKU
+
 	data.ignoreSlow	= g_setting.ignoreSlow;
 	data.round		= g_setting.rounds;
 	data.deny		= (g_denyListMgr->find(node->m_id) >= 0);	// 拒否している
@@ -938,7 +950,11 @@ void CNetMgr::send_pingReply120(bool p_needDetail, bool p_deny, bool p_underV113
 	//DBGOUT_NET("send_pingReply120\n");
 }
 
-void CNetMgr::send_pingReply(bool p_deny)
+#ifdef MANPUKU
+void CNetMgr::send_pingReply( CNode* node, bool bNotReady )
+#else
+void CNetMgr::send_pingReply( bool p_deny )
+#endif // #ifdef MANPUKU
 {
 	/* pingを送ってきたアドレスに返信 */
 
@@ -947,13 +963,21 @@ void CNetMgr::send_pingReply(bool p_deny)
 	// その後Pingを送らないので、相手がCasting=Onだった場合に更新が効かなくなる
 	bool idle = (m_connect && g_enemyInfo.m_rank == -1);
 
+#ifdef MANPUKU
+	bool p_deny = g_denyListMgr->find( node->m_id ) >= 0;
+#endif // #ifdef MANPUKU
+
 	if (!m_connect && !m_watch || idle)	// idle
 	{
 		SPacket_PingReply_Idle data;
 		data.packetType	= Packet_PingReply_Idle;
 		data.cid		= CONNECTION_ID;
 
-		data.notready = g_vsnet.m_menu_visible || (m_lobbyFrame < g_setting.wait * 60 + 30);
+#ifdef MANPUKU
+		data.notready = bNotReady || g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
+#else
+		data.notready = g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
+#endif // #ifdef MANPUKU
 
 		__strncpy(data.ver, GGNVERSTR, 9);
 		memcpy(data.id, g_machineID, 10);
@@ -1009,7 +1033,11 @@ void CNetMgr::send_pingReply(bool p_deny)
 #if TESTER
 			data.casting = 1;
 #else
+#ifdef MANPUKU
+			data.casting = ( node->m_watchMaxNode != -16 ) && ( getGGXXMODE2() == 6 );
+#else
 			data.casting = getGGXXMODE2() == 6; // 対戦中ならOK
+#endif // #ifdef MANPUKU
 #endif
 			data.wins		= g_setting.wins;
 			data.rank		= g_setting.rank;
@@ -1516,14 +1544,30 @@ bool CNetMgr::talking(void)
 			if (node->m_delay != g_setting.delay)			node->m_state = State_Mismatch;
 			if (underV113 && node->m_ex != g_setting.useEx)	node->m_state = State_Mismatch;
 
+#ifdef MANPUKU
+			bool bNotReady = false;
+			if( bVersionDeny ) {
+				if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+					node->m_state = State_VersionDeny;
+					bNotReady = true;
+				}
+			}
+#endif // #ifdef MANPUKU
+
 			/* 返信を打つ */
 			if (strcmp(node->m_ver, "1.20") <= 0)
 			{
-				send_pingReply120(data->needDetail, g_denyListMgr->find(node->m_id) >= 0, underV113);
+#ifndef MANPUKU
+				send_pingReply120( data->needDetail, g_denyListMgr->find( node->m_id ) >= 0, underV113 );
+#endif // #ifdef MANPUKU
 			}
 			else
 			{
+#ifdef MANPUKU
+				send_pingReply( node, bNotReady );
+#else
 				send_pingReply(g_denyListMgr->find(node->m_id) >= 0);
+#endif // #ifdef MANPUKU
 
 				if (data->needDetail && !m_connect)
 				{
@@ -1592,6 +1636,14 @@ bool CNetMgr::talking(void)
 
 				if (node->m_delay != g_setting.delay)									node->m_state = State_Mismatch;
 				if (strcmp(node->m_ver, "1.13") < 0 && node->m_ex != g_setting.useEx)	node->m_state = State_Mismatch;
+
+#ifdef MANPUKU
+				if( bVersionDeny ) {
+					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+						node->m_state = State_VersionDeny;
+					}
+				}
+#endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
 		}
@@ -1655,6 +1707,16 @@ bool CNetMgr::talking(void)
 				if (!netSpeedGood && ignoreSlow)		node->m_state = State_PingOver;
 
 				if (node->m_delay != g_setting.delay)	node->m_state = State_Mismatch;
+
+#ifdef MANPUKU
+				if( bVersionDeny ) {
+					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+						node->m_state = State_VersionDeny;
+						LEAVECS( &g_netMgr->m_csNode );
+						break;
+					}
+				}
+#endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
 		}
@@ -1958,6 +2020,14 @@ bool CNetMgr::talking(void)
 				if (!netSpeedGood && ignoreSlow) node->m_state = State_PingOver;
 
 				if (node->m_delay != g_setting.delay) node->m_state = State_Mismatch;
+
+#ifdef MANPUKU
+				if( bVersionDeny ) {
+					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+						node->m_state = State_VersionDeny;
+					}
+				}
+#endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
 		}

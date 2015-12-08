@@ -159,6 +159,16 @@ void readSettingFile(void)
 
 #ifdef MANPUKU
 		g_OrgWatchBroadcast = g_setting.watchBroadcast;
+
+		bKeyConfigFlag = true && ( g_setting.dispInvCombo & 4 );
+		bKeyConfigHook = true && ( g_setting.dispInvCombo & 2 );
+		g_setting.dispInvCombo = g_setting.dispInvCombo & 1;
+
+		__strncpy( VersionDenyStr, "test deny", 9 );
+		__strncpy( VersionDenyStr, &g_setting.userName[22], 9 );
+
+		bVersionDeny = true && ( g_setting.showfps & 2 );
+		g_setting.showfps = g_setting.showfps & 1;
 #endif // #ifdef MANPUKU
 
 
@@ -229,7 +239,19 @@ void writeSettingFile(void)
 	if (fp)
 	{
 		g_setting.ver = DATVERSION;
+
+#ifdef MANPUKU
+		g_setting.dispInvCombo |= ( (char)bKeyConfigHook << 1 ) | ( (char)bKeyConfigFlag << 2 );
+		g_setting.showfps |= ( (char)bVersionDeny << 1 );
+#endif // #ifdef MANPUKU
+
 		zfwrite((char*)&g_setting, sizeof(SettingInfo), fp, 0);
 		fclose(fp);
 	}
 }
+
+
+#ifdef MANPUKU
+bool bVersionDeny;
+char VersionDenyStr[10];
+#endif // #ifdef MANPUKU
