@@ -168,8 +168,13 @@ typedef struct
 
 
 #ifdef MANPUKU
+
 extern bool bVersionDeny;
 extern char VersionDenyStr[10];
+
+class CNode;
+
+void CheckVersionDeny( CNode *node, bool *pFlag );
 #endif // #ifdef MANPUKU
 
 

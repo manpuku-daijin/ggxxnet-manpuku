@@ -108,6 +108,13 @@ enum EPacketDataType
 
 	Packet_BattleInfoRequest,	/* 対戦中の情報要求 */
 	Packet_BattleInfo,			/* 対戦中の情報 */
+
+
+#ifdef MANPUKU
+	Packet_ChatData = 80,
+	Packet_ChatDataReply,
+#endif	// #ifdef MANPUKU
+
 };
 
 enum EBlockDataType
@@ -638,6 +645,29 @@ public:
 	int			m_compSendSize;		// 送信済み圧縮データのサイズ
 };
 
+
+#ifdef MANPUKU
+
+typedef struct {
+	char	packetType;
+	char	cid;
+
+	DWORD	scriptCode;
+
+	bool	isDirect;
+	char	name[30];
+	char	ChatStr[255];
+}SPacket_ChatData;
+
+typedef struct {
+	char	packetType;
+	char	cid;
+}SPacket_ChatDataReply;
+
+
+#endif // #ifdef MANPUKU
+
+
 class CNetMgr
 {
 public:
@@ -704,6 +734,9 @@ public:
 
 #ifdef MANPUKU
 	void LoadDisplayNodeMgr();
+
+	void send_ChatData( sockaddr_in* p_addr, bool isDirect );
+	void send_ChatDataReply( CNode* node );
 #endif // #ifdef MANPUKU
 
 private:
@@ -810,6 +843,10 @@ public:
 #ifdef MANPUKU
 	int m_AutoReadServerTime;
 	bool m_bAutoRemoveAllNode;
+
+	CRITICAL_SECTION	m_csDataBlock;
+
+	volatile bool m_waitingChatDataReply;
 #endif // #ifdef MANPUKU
 };
 

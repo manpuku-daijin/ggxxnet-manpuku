@@ -91,6 +91,9 @@ CNetMgr::CNetMgr(void)
 	InitializeCriticalSection(&m_csKey);
 	InitializeCriticalSection(&m_csNode);
 	InitializeCriticalSection(&m_csWatch);
+#ifdef MANPUKU
+	InitializeCriticalSection( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 }
 
 CNetMgr::~CNetMgr(void)
@@ -108,6 +111,9 @@ CNetMgr::~CNetMgr(void)
 	DeleteCriticalSection(&m_csKey);
 	DeleteCriticalSection(&m_csNode);
 	DeleteCriticalSection(&m_csWatch);
+#ifdef MANPUKU
+	DeleteCriticalSection( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 }
 
 bool CNetMgr::init(int p_port, int p_delay, bool p_useLobby)
@@ -568,10 +574,6 @@ void CNetMgr::send_key(int p_time)
 	data.packetType = Packet_Key;
 	data.time		= p_time;
 
-#ifdef MANPUKU
-	ENTERCS(&g_netMgr->m_csKey);
-#endif // #ifdef MANPUKU
-
 	for (int i = 0; i < m_queueSize; i++)
 	{
 		if (m_playSide == 1)
@@ -585,10 +587,6 @@ void CNetMgr::send_key(int p_time)
 			data.cell[i].syncChk = (BYTE)(m_syncChk[i] >> 8);
 		}
 	}
-
-#ifdef MANPUKU
-	LEAVECS(&g_netMgr->m_csKey);
-#endif // #ifdef MANPUKU
 
 	udpsend(&m_remoteAddr_active, (char*)&data, 5 + m_queueSize * 3);
 }
@@ -827,11 +825,7 @@ bool CNetMgr::send_ping(sockaddr_in* p_addr, int p_selNodeIdx)
 
 #ifdef MANPUKU
 	bool bNotReady = false;
-	if( bVersionDeny ) {
-		if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
-			bNotReady = true;
-		}
-	}
+	CheckVersionDeny( node, &bNotReady );
 	data.notready = bNotReady || g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
 #else
 	data.notready = g_vsnet.m_menu_visible || ( m_lobbyFrame < g_setting.wait * 60 + 30 );
@@ -1341,25 +1335,54 @@ bool CNetMgr::sendDataBlock(char p_type, char* p_data, int p_dataSize, int p_tim
 		memcpy(data.data, &p_data[maxDataSize * i], size);
 		
 		bool success = false;
+#ifdef MANPUKU
+		ENTERCS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 		m_waitingDataReply = true;
+#ifdef MANPUKU
+		LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
+
 		for (int j = 0; j * 10 < p_timeout; j++)
 		{
+#ifdef MANPUKU
+			ENTERCS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 			if (!m_waitingDataReply)
 			{
+#ifdef MANPUKU
+				LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 				DBGOUT_NET("send_data %d success\n", i);
 				success = true;
 				break;
 			}
+
+#ifdef MANPUKU
+			LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 			/* 再送 */
 			udpsend(&m_remoteAddr_active, (char*)&data, g_iniFileInfo.m_maxPacketSize + SPacket_Data::PACKET_HEADER_SIZE);
 			Sleep(10);
 		}
 		if (success == false)
 		{
+#ifdef MANPUKU
+			ENTERCS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 			m_waitingDataReply = false;
+#ifdef MANPUKU
+			LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 			return false;
 		}
+#ifdef MANPUKU
+		ENTERCS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 		m_sendDataSeq++;
+#ifdef MANPUKU
+		LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 	}
 	return true;
 #endif
@@ -1546,12 +1569,7 @@ bool CNetMgr::talking(void)
 
 #ifdef MANPUKU
 			bool bNotReady = false;
-			if( bVersionDeny ) {
-				if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
-					node->m_state = State_VersionDeny;
-					bNotReady = true;
-				}
-			}
+			CheckVersionDeny( node, &bNotReady );
 #endif // #ifdef MANPUKU
 
 			/* 返信を打つ */
@@ -1638,11 +1656,7 @@ bool CNetMgr::talking(void)
 				if (strcmp(node->m_ver, "1.13") < 0 && node->m_ex != g_setting.useEx)	node->m_state = State_Mismatch;
 
 #ifdef MANPUKU
-				if( bVersionDeny ) {
-					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
-						node->m_state = State_VersionDeny;
-					}
-				}
+				CheckVersionDeny( node, nullptr );
 #endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
@@ -1709,13 +1723,7 @@ bool CNetMgr::talking(void)
 				if (node->m_delay != g_setting.delay)	node->m_state = State_Mismatch;
 
 #ifdef MANPUKU
-				if( bVersionDeny ) {
-					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
-						node->m_state = State_VersionDeny;
-						LEAVECS( &g_netMgr->m_csNode );
-						break;
-					}
-				}
+				CheckVersionDeny( node, nullptr );
 #endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
@@ -1862,6 +1870,12 @@ bool CNetMgr::talking(void)
 
 				/* Stateの更新 */
 				node->m_state = data->casting ? State_Busy_Casting : State_Busy_Casting_NG;
+
+#ifdef MANPUKU
+				if( node->m_state == State_Busy_Casting_NG ) {
+					CheckVersionDeny( node, nullptr );
+				}
+#endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
 		}
@@ -1953,6 +1967,10 @@ bool CNetMgr::talking(void)
 				/* Stateの更新 */
 				node->m_state = node->m_allowIntrusion ? State_Watch_Playable : State_Watch;
 
+#ifdef MANPUKU
+				CheckVersionDeny( node, nullptr );
+#endif // #ifdef MANPUKU
+
 				if (node->m_state == State_Watch_Playable)
 				{
 					// 乱入可の場合だけPing/DelayCheckする
@@ -2022,11 +2040,7 @@ bool CNetMgr::talking(void)
 				if (node->m_delay != g_setting.delay) node->m_state = State_Mismatch;
 
 #ifdef MANPUKU
-				if( bVersionDeny ) {
-					if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
-						node->m_state = State_VersionDeny;
-					}
-				}
+				CheckVersionDeny( node, nullptr );
 #endif // #ifdef MANPUKU
 			}
 			LEAVECS(&g_netMgr->m_csNode);
@@ -2261,6 +2275,9 @@ bool CNetMgr::talking(void)
 
 			if (data->type == m_waitingDataType)
 			{
+#ifdef MANPUKU
+				ENTERCS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 				if (m_waitingData && m_recvDataSeq < data->seq)
 				{
 					if (m_recvDataSize >= data->dataOffset + data->dataSize)
@@ -2275,6 +2292,9 @@ bool CNetMgr::talking(void)
 					if (data->dataOffset + data->dataSize == m_recvDataSize) m_waitingData = false; /* データ受信完了 */
 					m_recvDataSeq = data->seq;
 				}
+#ifdef MANPUKU
+				LEAVECS( &m_csDataBlock );
+#endif // #ifdef MANPUKU
 				/* 受信成功を通知（再送のため古いシーケンスでも送信） */
 				if (m_recvDataSeq >= data->seq)
 				{
@@ -3026,7 +3046,10 @@ void CNetMgr::LoadDisplayNodeMgr()
 		int DisplayNodeMgrIdx = g_DisplayNodeMgr->findNodeIdx_address( node->m_addr );
 		if( node->m_state != State_NoResponse && node->m_state != State_Unknown ) {
 			if( g_iniFileInfo.m_NodeDisplayMode == 2 ) {
-				if( node->m_deny || ( g_denyListMgr->find( node->m_id ) != -1 ) ) DisplayNodeMgrIdx = -2;
+				int tmpFlag = g_denyListMgr->find( node->m_id );
+				if( tmpFlag > -2 ) {
+					if( node->m_deny || ( tmpFlag != -1 ) ) DisplayNodeMgrIdx = -2;
+				}
 			}
 			if( DisplayNodeMgrIdx != -2 ) {
 				if( DisplayNodeMgrIdx == -1 ) {
@@ -3041,5 +3064,29 @@ void CNetMgr::LoadDisplayNodeMgr()
 		}
 	}
 //	LEAVECS( &m_csNode );
+}
+
+
+
+void CNetMgr::send_ChatData( sockaddr_in* p_addr, bool isDirect )
+{
+	SPacket_ChatData data; 
+	data.packetType = Packet_ChatData;
+	data.cid = CONNECTION_ID;
+
+	data.isDirect = isDirect;
+
+	data.scriptCode = g_scriptCode;
+	getNameTrip( data.name );
+
+	udpsend( p_addr, (char*)&data, sizeof( data ) );
+}
+
+void CNetMgr::send_ChatDataReply( CNode* node )
+{
+	SPacket_ChatDataReply data;
+	data.packetType = Packet_ChatDataReply;
+	data.cid = CONNECTION_ID;
+	udpsend( &m_remoteAddr_recv, (char*)&data, sizeof( data ) );
 }
 #endif // #ifdef MANPUKU

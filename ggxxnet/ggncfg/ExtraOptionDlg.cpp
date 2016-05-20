@@ -49,6 +49,8 @@ BOOL CExtraOptionDlg::OnInitDialog()
 
 	CComboBox *cvd = (CComboBox*)GetDlgItem( IDC_COMBO_VER_DENY );
 	cvd->ResetContent();
+	cvd->AddString( "1.24" );
+
 	cvd->AddString( "1.23" );
 
 	cvd->AddString( "1.22-5" );

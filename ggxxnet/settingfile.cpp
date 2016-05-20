@@ -254,4 +254,14 @@ void writeSettingFile(void)
 #ifdef MANPUKU
 bool bVersionDeny;
 char VersionDenyStr[10];
+
+void CheckVersionDeny( CNode *node, bool *pFlag )
+{
+	if( bVersionDeny ) {
+		if( strcmp( node->m_ver, VersionDenyStr ) < 0 ) {
+			if( node->m_state == State_Idle ) node->m_state = State_VersionDeny;
+			if( pFlag ) *pFlag = true;
+		}
+	}
+}
 #endif // #ifdef MANPUKU

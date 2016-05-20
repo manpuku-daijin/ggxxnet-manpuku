@@ -632,7 +632,13 @@ void ggn_input(void)
 		/* suspend’†‚Å‚àrecvSuspend‚ªtrue‚É‚È‚é‚Ü‚ÅƒL[‚ð‘—‚è‘±‚¯‚é */
 		if (g_netMgr->m_recvSuspend == false)
 		{
+#ifdef MANPUKU
+			ENTERCS( &g_netMgr->m_csKey );
+			g_netMgr->send_key( g_netMgr->m_time );
+			LEAVECS( &g_netMgr->m_csKey );
+#else
 			g_netMgr->send_key(g_netMgr->m_time);
+#endif // #ifdef MANPUKU
 		}
 		**GGXX_ggnv_InputDataPtr = 0;
 	}
@@ -922,8 +928,8 @@ void ggn_input(void)
 			while( g_netMgr->m_connect ) {
 				ENTERCS(&g_netMgr->m_csKey);
 				bool bResult = ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF ) != 0x0000FFFF && ( g_netMgr->m_key[g_netMgr->m_delay - 1] & 0xFFFF0000 ) != 0xFFFF0000;
-				LEAVECS(&g_netMgr->m_csKey);
 				if( bResult ) break;
+				LEAVECS(&g_netMgr->m_csKey);
 #else
 			while (g_netMgr->m_connect &&
 				((g_netMgr->m_key[g_netMgr->m_delay - 1] & 0x0000FFFF) == 0x0000FFFF ||
@@ -932,7 +938,15 @@ void ggn_input(void)
 #endif // #ifdef MANPUKU
 				if (slow % 5 == 0)
 				{
+#ifdef MANPUKU
+					if( g_netMgr->m_recvSuspend == false ) {
+						ENTERCS( &g_netMgr->m_csKey );
+						g_netMgr->send_key( g_netMgr->m_time );
+						LEAVECS( &g_netMgr->m_csKey );
+					}
+#else
 					if (g_netMgr->m_recvSuspend == false) g_netMgr->send_key(g_netMgr->m_time);
+#endif // #ifdef MANPUKU
 				}
 
 				Sleep(3);
@@ -962,7 +976,9 @@ void ggn_input(void)
 			//static int xxx = 0;
 			//if (xxx++ % 2 == 0) **GGXX_ggnv_InputDataPtr = 0;
 
+#ifndef MANPUKU
 			ENTERCS(&g_netMgr->m_csKey);
+#endif // #ifndef MANPUKU
 
 #ifdef MANPUKU
 			if( bKeyConfigHook ) {
@@ -1941,12 +1957,15 @@ void ggn_startVS(void)
 			*GGXX_2PVOICE = g_replay.m_data.voice2P;
 			*GGXX_1PEX = g_replay.m_data.ex1P;
 			*GGXX_2PEX = g_replay.m_data.ex2P;
+#ifdef MANPUKU
+			Ex2Fix( false );
+#endif // #ifdef MANPUKU
 		}
 		g_netMgr->m_initKeySet = false;
 	}
 #ifdef MANPUKU
 	else {
-		Ex2Fix( true && ( g_setting.useEx & 2 ) );
+		Ex2Fix( true && ( g_setting.useEx & 2 ) && ( !( *GGXX_MODE1 & 0xc00000 ) ) );
 	}
 #endif // #ifdef MANPUKU
 }
@@ -3153,7 +3172,7 @@ void ggn_render(void)
 			case State_Busy_Casting_NG:	strcpy(str, "Busy(Casting)");	break;
 
 #ifdef MANPUKU
-			case State_VersionDeny:	sprintf( str, "Version %s", node->m_ver );	break;
+			case State_VersionDeny:	sprintf( str, "Under %s", VersionDenyStr );	break;
 #endif // #ifdef MANPUKU
 			}
 			

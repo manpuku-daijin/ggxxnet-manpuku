@@ -359,6 +359,9 @@ int cmp_status(CNode *a, CNode *b)
 	else if (a->m_state == State_VersionError)		scorea += 40000;
 	else if (a->m_state == State_NotReady)			scorea += 10000;
 	else if (a->m_state == State_PingOver)			scorea +=  8000;
+#ifdef MANPUKU
+	else if( a->m_state == State_VersionDeny )		scorea += 50000;
+#endif // #ifdef MANPUKU
 
 	if (b->m_state == State_Idle)					scoreb += 00000;
 	else if (b->m_state == State_Watch_Playable)	scoreb +=  5000;
@@ -371,6 +374,9 @@ int cmp_status(CNode *a, CNode *b)
 	else if (b->m_state == State_VersionError)		scoreb += 40000;
 	else if (b->m_state == State_NotReady)			scoreb += 10000;
 	else if (b->m_state == State_PingOver)			scoreb +=  8000;
+#ifdef MANPUKU
+	else if( b->m_state == State_VersionDeny )		scoreb += 50000;
+#endif // #ifdef MANPUKU
 
 	/* rank·‚ð‰e‹¿ */
 	if (idcmp((BYTE*)a->m_id, INVALID_MID) == false)

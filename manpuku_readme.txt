@@ -1,4 +1,4 @@
-GGXXNET Ver1.23 (Last Update:2015/12/09)
+GGXXNET Ver1.24 (Last Update:2016/05/21)
 
 
 【インストール】
@@ -49,6 +49,15 @@ https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
 
 
 【更新履歴】
+　2016/05/21
+　　Ver1.24
+　　・Ex2モード有効時に観戦をするとEx2モードが適用されて再生されるのを修正した
+　　・応答拒否設定にされている乱入可のWatch状態の下位バージョンへ乱入できないようにした
+　　・応答拒否ノードに表示される文字列を変更した(Version→Under)
+　　・Statusソート時の応答拒否ノードの表示位置を修正した
+　　・DisplayModeのNo ResponseとDeny非表示時、データが取得できていないノードが非表示になるのを修正した
+　　・大容量データ送受信処理にクリティカルセクションの排他制御を追加した
+　　・キー入力処理のクリティカルセクション処理を一部変更した
 　2015/12/09
 　　Ver1.23
 　　・ggxxnet_config.exeにExtra Optionボタンを追加した
